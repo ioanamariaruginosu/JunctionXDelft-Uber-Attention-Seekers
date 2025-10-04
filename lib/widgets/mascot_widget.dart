@@ -3,16 +3,16 @@ import 'package:provider/provider.dart';
 import 'dart:math' as math;
 import '../services/atlas_ai_service.dart';
 
-class AtlasWidget extends StatefulWidget {
-  const AtlasWidget({
+class MascotWidget extends StatefulWidget {
+  const MascotWidget({
     Key? key,
   }) : super(key: key);
 
   @override
-  State<AtlasWidget> createState() => _AtlasWidgetState();
+  State<MascotWidget> createState() => _MascotWidgetState();
 }
 
-class _AtlasWidgetState extends State<AtlasWidget> with TickerProviderStateMixin {
+class _MascotWidgetState extends State<MascotWidget> with TickerProviderStateMixin {
   late AnimationController _floatingController;
   late AnimationController _glowController;
   late AnimationController _rotationController;
@@ -84,6 +84,7 @@ class _AtlasWidgetState extends State<AtlasWidget> with TickerProviderStateMixin
     });
   }
 
+  // HERE ARE THE TIPS
   void _showNextTip() {
     final tips = [
       '💰 Downtown surge active! +2.5x earnings',
@@ -172,7 +173,8 @@ class _AtlasWidgetState extends State<AtlasWidget> with TickerProviderStateMixin
                       gradient: const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [Color(0xFFFFC107), Color(0xFFFFB300)],
+                        //colors: [Color(0xFFFFC107), Color(0xFFFFB300)],
+                        colors: [Color(0xFF2196F3), Color(0xFF1976D2)],
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -204,7 +206,8 @@ class HappyFacePainter extends CustomPainter {
 
     // Eyes
     final eyePaint = Paint()
-      ..color = Colors.black87
+      ..color = Colors.white
+      //..color = Color.blue
       ..style = PaintingStyle.fill;
 
     // Left eye
@@ -223,7 +226,7 @@ class HappyFacePainter extends CustomPainter {
 
     // Smile
     final smilePaint = Paint()
-      ..color = Colors.black87
+      ..color = Colors.white
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round;

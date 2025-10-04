@@ -91,6 +91,7 @@ class _NotificationPopupState extends State<NotificationPopup> with SingleTicker
     final theme = Theme.of(context);
     final notification = widget.notification;
 
+
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
