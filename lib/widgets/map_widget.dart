@@ -1,17 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'dart:math' as math;
+import '../services/break_status_service.dart';
 
 class DemandZone {
   final LatLng center;
-  final double radius; // in meters
+  final double radius;
   final double multiplier;
   final Color color;
 
@@ -40,7 +41,6 @@ class RestLocation {
 
   factory RestLocation.fromJson(Map<String, dynamic> json) {
     try {
-      // Simple format with latitude/longitude directly in the object
       return RestLocation(
         id: json['id'] as String? ?? 'unknown',
         name: json['name'] as String? ?? 'Parking Location',
@@ -72,13 +72,7 @@ class _RealMapWidgetState extends State<RealMapWidget> {
   List<RestLocation> _restLocations = [];
   Timer? _zoneTimer;
 
-  // Update based on your platform
-  // For Android emulator: use 10.0.2.2
-  // For iOS simulator: use localhost
-  // For physical device: use your computer's IP address
-  static const String baseUrl = 'http://localhost:8080'; // Android emulator
-  // static const String baseUrl = 'http://localhost:8080'; // iOS simulator
-  // static const String baseUrl = 'http://192.168.1.x:8080'; // Physical device
+  static const String baseUrl = 'http://localhost:8080';
 
   @override
   void initState() {
@@ -103,7 +97,6 @@ class _RealMapWidgetState extends State<RealMapWidget> {
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
 
-        // Handle both array and GeoJSON formats
         List<dynamic> features;
         if (jsonData is Map && jsonData.containsKey('features')) {
           features = jsonData['features'] as List<dynamic>;
@@ -122,7 +115,7 @@ class _RealMapWidgetState extends State<RealMapWidget> {
               return null;
             }
           })
-              .whereType<RestLocation>() // Filter out nulls
+              .whereType<RestLocation>()
               .toList();
         });
       }
@@ -135,14 +128,13 @@ class _RealMapWidgetState extends State<RealMapWidget> {
   void _startRandomZoneGeneration() {
     _generateDemandZones();
 
-    // Then generate new zones at random intervals (between 10-30 seconds)
     void scheduleNext() {
       final random = math.Random();
-      final seconds = 10 + random.nextInt(21); // 10 to 30 seconds
+      final seconds = 10 + random.nextInt(21);
 
       _zoneTimer = Timer(Duration(seconds: seconds), () {
         _generateDemandZones();
-        scheduleNext(); // Schedule the next generation
+        scheduleNext();
       });
     }
 
@@ -153,11 +145,9 @@ class _RealMapWidgetState extends State<RealMapWidget> {
     final random = math.Random();
     _demandZones.clear();
 
-    // Generate 5-8 random demand zones around current location
     final numZones = 5 + random.nextInt(4);
 
     for (int i = 0; i < numZones; i++) {
-      // Random offset from current location (roughly within 5km)
       final latOffset = (random.nextDouble() - 0.5) * 0.05;
       final lngOffset = (random.nextDouble() - 0.5) * 0.05;
 
@@ -166,10 +156,8 @@ class _RealMapWidgetState extends State<RealMapWidget> {
         _currentLocation.longitude + lngOffset,
       );
 
-      // Random multiplier between 1.2x and 3.0x
       final multiplier = 1.2 + random.nextDouble() * 1.8;
 
-      // Color based on multiplier
       Color color;
       if (multiplier >= 2.5) {
         color = Colors.red.withOpacity(0.3);
@@ -181,7 +169,6 @@ class _RealMapWidgetState extends State<RealMapWidget> {
         color = Colors.green.withOpacity(0.3);
       }
 
-      // Random radius between 300-800 meters
       final radius = 300.0 + random.nextDouble() * 500;
 
       _demandZones.add(DemandZone(
@@ -245,6 +232,9 @@ class _RealMapWidgetState extends State<RealMapWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final breakStatusService = context.watch<BreakStatusService>();
+    final shouldShowRestLocations = breakStatusService.needsBreak;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -272,12 +262,11 @@ class _RealMapWidgetState extends State<RealMapWidget> {
                 tileProvider: NetworkTileProvider(),
               ),
 
-              // Demand zones as circles
               CircleLayer(
                 circles: _demandZones.map((zone) {
                   return CircleMarker(
                     point: zone.center,
-                    radius: zone.radius / 2, // Adjust visual size
+                    radius: zone.radius / 2,
                     color: zone.color,
                     borderColor: zone.color.withOpacity(0.8),
                     borderStrokeWidth: 2,
@@ -286,7 +275,6 @@ class _RealMapWidgetState extends State<RealMapWidget> {
                 }).toList(),
               ),
 
-              // Markers showing multipliers
               MarkerLayer(
                 markers: _demandZones.map((zone) {
                   return Marker(
@@ -327,67 +315,66 @@ class _RealMapWidgetState extends State<RealMapWidget> {
                 }).toList(),
               ),
 
-              // Rest location markers - with better visibility
-              MarkerLayer(
-                markers: _restLocations.map((location) {
-                  print('Creating marker at: ${location.latitude}, ${location.longitude} - ${location.name}');
-                  return Marker(
-                    point: LatLng(location.latitude, location.longitude),
-                    width: 80,
-                    height: 80,
-                    alignment: Alignment.topCenter,
-                    child: GestureDetector(
-                      onTap: () {
-                        print('Tapped rest location: ${location.name}');
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(location.name),
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-                      },
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.deepPurple,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 3,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.5),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 3),
+              if (shouldShowRestLocations)
+                MarkerLayer(
+                  markers: _restLocations.map((location) {
+                    print('Creating rest marker at: ${location.latitude}, ${location.longitude} - ${location.name}');
+                    return Marker(
+                      point: LatLng(location.latitude, location.longitude),
+                      width: 80,
+                      height: 80,
+                      alignment: Alignment.topCenter,
+                      child: GestureDetector(
+                        onTap: () {
+                          print('Tapped rest location: ${location.name}');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Rest Stop: ${location.name}'),
+                              duration: const Duration(seconds: 2),
+                              backgroundColor: Colors.deepPurple,
+                            ),
+                          );
+                        },
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.deepPurple,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 3,
                                 ),
-                              ],
-                            ),
-                            child: const Text(
-                              'Zzz',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.5),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: const Text(
+                                'Zzz',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
-                          // Small triangle pointer
-                          CustomPaint(
-                            size: const Size(16, 8),
-                            painter: TrianglePainter(Colors.deepPurple),
-                          ),
-                        ],
+                            CustomPaint(
+                              size: const Size(16, 8),
+                              painter: TrianglePainter(Colors.deepPurple),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                }).toList(),
-              ),
+                    );
+                  }).toList(),
+                ),
 
-              // Current location marker
               if (!_isLoadingLocation)
                 MarkerLayer(
                   markers: [
@@ -423,8 +410,6 @@ class _RealMapWidgetState extends State<RealMapWidget> {
                 ),
               ),
             ),
-
-          // Controls
           Positioned(
             top: 50,
             right: 16,
@@ -485,13 +470,47 @@ class _RealMapWidgetState extends State<RealMapWidget> {
               ],
             ),
           ),
+          if (shouldShowRestLocations)
+            Positioned(
+              bottom: 120,
+              left: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.deepPurple.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.hotel, color: Colors.white, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Rest stops shown',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 }
 
-// Custom painter for the triangle pointer below the marker
 class TrianglePainter extends CustomPainter {
   final Color color;
 
@@ -504,9 +523,9 @@ class TrianglePainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     final path = Path();
-    path.moveTo(size.width / 2, size.height); // Bottom center (point)
-    path.lineTo(0, 0); // Top left
-    path.lineTo(size.width, 0); // Top right
+    path.moveTo(size.width / 2, size.height);
+    path.lineTo(0, 0);
+    path.lineTo(size.width, 0);
     path.close();
 
     canvas.drawPath(path, paint);

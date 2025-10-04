@@ -5,7 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../models/trip_model.dart';
 import '../models/earnings_model.dart';
 import '../models/notification_model.dart';
-import '../utils/constants.dart';
+import '../utils/api_client.dart';
 
 class MockDataService extends ChangeNotifier {
   final Random _random = Random();
@@ -27,6 +27,8 @@ class MockDataService extends ChangeNotifier {
   Duration _timeOnline = Duration.zero;
   DateTime? _sessionStartTime;
 
+  String? _userId;
+
   List<TripModel> get tripHistory => _tripHistory;
   List<NotificationModel> get notifications => _notifications;
   TripModel? get currentTripRequest => _currentTripRequest;
@@ -40,6 +42,10 @@ class MockDataService extends ChangeNotifier {
   MockDataService() {
     _initializeTodayEarnings();
     _initializeDemandZones();
+  }
+
+  void setUserId(String userId) {
+    _userId = userId;
   }
 
   void _initializeTodayEarnings() {
@@ -129,17 +135,17 @@ class MockDataService extends ChangeNotifier {
 
     _tripRequestTimer = Timer.periodic(
       Duration(seconds: _random.nextInt(60) + 30),
-      (_) => _generateTripRequest(),
+          (_) => _generateTripRequest(),
     );
 
     _demandUpdateTimer = Timer.periodic(
       const Duration(minutes: 5),
-      (_) => _updateDemandZones(),
+          (_) => _updateDemandZones(),
     );
 
     _earningsUpdateTimer = Timer.periodic(
       const Duration(seconds: 1),
-      (_) => _updateTimeOnline(),
+          (_) => _updateTimeOnline(),
     );
   }
 
@@ -177,8 +183,10 @@ class MockDataService extends ChangeNotifier {
     });
   }
 
-  void acceptTrip() {
+  Future<void> acceptTrip() async {
     if (_currentTripRequest == null) return;
+
+    await _startSession();
 
     _activeTrip = _currentTripRequest!.copyWith(
       status: TripStatus.accepted,
@@ -199,9 +207,55 @@ class MockDataService extends ChangeNotifier {
     _simulateTripProgress();
   }
 
-  void declineTrip() {
+  Future<void> declineTrip() async {
+    if (_currentTripRequest == null) return;
+
+    await _stopSession();
+
     _currentTripRequest = null;
     notifyListeners();
+  }
+
+  Future<void> _startSession() async {
+    if (_userId == null) {
+      debugPrint('Cannot start session: userId is null');
+      return;
+    }
+
+    try {
+      final response = await ApiClient.post(
+        '/hours/start/$_userId'
+      );
+
+      if (response.success) {
+        debugPrint('Session started successfully for user: $_userId');
+      } else {
+        debugPrint('Failed to start session: ${response.message}');
+      }
+    } catch (e) {
+      debugPrint('Error starting session: $e');
+    }
+  }
+
+  Future<void> _stopSession() async {
+    if (_userId == null) {
+      debugPrint('Cannot stop session: userId is null');
+      return;
+    }
+
+    try {
+      final response = await ApiClient.post(
+        '/hours/stop/$_userId'
+      );
+
+      if (response.success) {
+        debugPrint('Session stopped successfully for user: $_userId');
+      } else {
+        debugPrint('Failed to stop session: ${response.message}');
+      }
+    } catch (e) {
+      debugPrint('Error stopping session: $e');
+    }
   }
 
   void _simulateTripProgress() async {
@@ -252,6 +306,8 @@ class MockDataService extends ChangeNotifier {
       priority: NotificationPriority.normal,
     ));
 
+    await _stopSession();
+
     _activeTrip = null;
     notifyListeners();
   }
@@ -300,7 +356,7 @@ class MockDataService extends ChangeNotifier {
         _addNotification(NotificationModel(
           id: const Uuid().v4(),
           title: 'Bonus Completed! 🎉',
-          message: '${bonus.title}: +\\\$${bonus.reward.toStringAsFixed(2)}',
+          message: '${bonus.title}: +\$${bonus.reward.toStringAsFixed(2)}',
           type: NotificationType.bonus,
           priority: NotificationPriority.high,
         ));
@@ -322,7 +378,7 @@ class MockDataService extends ChangeNotifier {
     });
 
     final highestDemandZone = _demandZones.entries.reduce(
-      (a, b) => a.value > b.value ? a : b,
+          (a, b) => a.value > b.value ? a : b,
     );
 
     if (highestDemandZone.value > 2.0) {

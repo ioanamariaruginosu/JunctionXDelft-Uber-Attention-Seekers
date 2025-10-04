@@ -8,29 +8,27 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/hours")
+@RequestMapping("/api/hours")
 public class HoursController {
 
     @Autowired
     private HoursService hoursService;
 
-    @PostMapping("/start")
-    public void startSession(@RequestParam String userId) {
+    @PostMapping("/start/{userId}")
+    public void startSession(@PathVariable String userId) {
         hoursService.startSession(userId);
     }
 
-    @PostMapping("/stop")
-    public void stopSession(@RequestParam String userId) {
+    @PostMapping("/stop/{userId}")
+    public void stopSession(@PathVariable String userId) {
         hoursService.stopSession(userId);
     }
 
-    @GetMapping("/status")
-    public Map<String, Integer> getStatus(@RequestParam String userId) {
+    @GetMapping("/status/{userId}")
+    public Map<String, Integer> getStatus(@PathVariable String userId) {
         Map<String, Integer> status = new HashMap<>();
         status.put("continuous", hoursService.getContinuousMinutes(userId));
-        status.put("driving", hoursService.getDrivingMinutes(userId));
         status.put("totalContinuousToday", hoursService.getTotalMinutesToday(userId));
-        status.put("totalDrivingToday", hoursService.getTotalDrivingMinutesToday(userId));
         return status;
     }
 

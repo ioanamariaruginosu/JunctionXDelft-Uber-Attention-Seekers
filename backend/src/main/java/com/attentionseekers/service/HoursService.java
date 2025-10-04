@@ -23,16 +23,12 @@ public class HoursService {
     private final ObjectMapper objectMapper;
     private final SessionService sessionService;
 
-    // Prefer constructor injection in Spring
     public HoursService(SessionService sessionService, ObjectMapper objectMapper) {
         this.sessionService = sessionService != null ? sessionService : new SessionService();
-        // Ensure JavaTime (LocalDateTime) is supported even if a plain ObjectMapper is injected
         this.objectMapper = (objectMapper != null ? objectMapper.copy() : new ObjectMapper())
                 .registerModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
-
-    /* ===================== Persistence helpers ===================== */
 
     private void saveSessionInfo(String userId, SessionInfo info) {
         File dir = new File(SESSION_DIR);
@@ -85,21 +81,6 @@ public class HoursService {
         return sessionService.getTotalMinutesToday(getSessionInfo(userId));
     }
 
-    public int getDrivingMinutes(String userId) {
-        // Implement driving minutes logic per user if needed
-        return 0;
-    }
-
-    public int getTotalDrivingMinutesToday(String userId) {
-        // Implement total driving minutes today logic per user if needed
-        return 0;
-    }
-
-    /* ===================== DTO for persistence ===================== */
-    /**
-     * Snapshot DTO so we can persist SessionInfo cleanly without exposing setters
-     * on the domain model. This avoids Jackson trouble with unmodifiable lists.
-     */
     private static class SessionSnapshot {
         public java.util.List<SessionPeriod> sessions = new java.util.ArrayList<>();
         public LocalDateTime currentSessionStart;

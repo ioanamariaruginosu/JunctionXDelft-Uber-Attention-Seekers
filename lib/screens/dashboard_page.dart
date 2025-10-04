@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:math' as math;
 import '../services/auth_service.dart';
 import '../services/mock_data_service.dart';
 import '../services/atlas_ai_service.dart';
@@ -57,6 +56,12 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
     ));
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authService = context.read<AuthService>();
+      final mockDataService = context.read<MockDataService>();
+      if (authService.currentUser != null) {
+        mockDataService.setUserId(authService.currentUser!.id);
+      }
+
       context.read<NotificationService>().startAutoNotifications();
       _counterController.forward();
     });
@@ -75,6 +80,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
     final authService = context.watch<AuthService>();
     final mockData = context.watch<MockDataService>();
     final atlasService = context.watch<AtlasAIService>();
+    final user = authService.currentUser;
     final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
 
@@ -87,10 +93,9 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
           _buildTopBar(context, authService, mockData),
           if (mockData.currentTripRequest != null) _buildTripRequestCard(context, mockData, atlasService),
           if (mockData.activeTrip != null) _buildActiveTripCard(context, mockData),
-          const MascotWidget(), // change icon
+          MascotWidget(userId: user!.id), // change icon
           const PopupSystem(),
 
-          // Add the slide to go online widget
           SlideToGoOnline(
             isOnline: mockData.isOnline,
             onChanged: (value) {
@@ -136,7 +141,6 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
         ),
         child: Stack(
           children: [
-            // Menu button on the left
             Positioned(
               left: 0,
               child: Positioned(
@@ -162,7 +166,6 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
               ),
             ),
 
-            // Centered earnings
             Center(
               child: AnimatedBuilder(
                 animation: _counterAnimation,

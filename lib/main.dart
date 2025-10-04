@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:uber_copilot/services/break_status_service.dart';
 import 'screens/auth_page.dart';
 import 'screens/dashboard_page.dart';
 import 'screens/settings_page.dart';
@@ -35,6 +36,7 @@ class UberCopilotApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AtlasAIService()),
         ChangeNotifierProvider(create: (_) => NotificationService()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => BreakStatusService()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {

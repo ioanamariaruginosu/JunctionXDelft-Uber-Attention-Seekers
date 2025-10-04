@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
 import '../services/atlas_ai_service.dart';
+import '../services/break_status_service.dart';
+import '../utils/api_client.dart';
 
 class MascotWidget extends StatefulWidget {
+  final String userId;
+
   const MascotWidget({
     Key? key,
+    required this.userId,
   }) : super(key: key);
 
   @override
@@ -22,6 +27,11 @@ class _MascotWidgetState extends State<MascotWidget> with TickerProviderStateMix
 
   String _currentTip = '';
   bool _showTip = false;
+  bool _hasShownRestNotification = false;
+  bool _needsBreak = false;
+  DateTime? _breakStartTime;
+  int _totalDrivingMinutesToday = 0;
+  int _continuousDrivingMinutes = 0;
 
   @override
   void initState() {
@@ -63,8 +73,9 @@ class _MascotWidgetState extends State<MascotWidget> with TickerProviderStateMix
       end: 2 * math.pi,
     ).animate(_rotationController);
 
-    // Start showing random tips
     _startTipCycle();
+
+    _startDrivingTimeCheck();
   }
 
   @override
@@ -75,20 +86,142 @@ class _MascotWidgetState extends State<MascotWidget> with TickerProviderStateMix
     super.dispose();
   }
 
+  void _startDrivingTimeCheck() {
+    _checkDrivingTime();
+    Future.delayed(const Duration(minutes: 1), () {
+      if (mounted) {
+        _startDrivingTimeCheck();
+      }
+    });
+  }
+
+  Future<void> _checkDrivingTime() async {
+    try {
+      debugPrint('🔍 Checking driving time for user: ${widget.userId}');
+      final response = await ApiClient.get(
+          '/hours/status/${widget.userId}'
+      );
+
+      debugPrint('📡 API Response - Status: ${response.statusCode}, Success: ${response.success}');
+      debugPrint('📦 Response data: ${response.dataAsMap}');
+
+      if (response.success && response.dataAsMap != null) {
+        final data = response.dataAsMap!;
+        final totalContinuousToday = data['totalContinuousToday'] as int? ?? 0;
+        final continuousDriving = data['continuous'] as int? ?? 0;
+
+        setState(() {
+          _totalDrivingMinutesToday = totalContinuousToday;
+          _continuousDrivingMinutes = continuousDriving;
+        });
+
+        debugPrint('📊 Total today: $_totalDrivingMinutesToday mins, Continuous: $_continuousDrivingMinutes mins');
+        debugPrint('🚦 Current state - needsBreak: $_needsBreak, hasShownNotification: $_hasShownRestNotification');
+
+        // Check if user needs a break (driving >= 1 minute for testing, 600 for production)
+        if (totalContinuousToday >= 1) {
+          debugPrint('✅ Total driving exceeds threshold (1 min)');
+
+          // Check if user is on a break (continuous driving is 0 or low)
+          if (continuousDriving == 0 && _needsBreak) {
+            debugPrint('⏸️ User is on break (continuous = 0)');
+            // User might be on break
+            if (_breakStartTime == null) {
+              _breakStartTime = DateTime.now();
+              debugPrint('🕐 Break timer started');
+            } else {
+              // Check if break has been 30 minutes
+              final breakDuration = DateTime.now().difference(_breakStartTime!);
+              debugPrint('⏱️ Break duration: ${breakDuration.inMinutes} minutes');
+              if (breakDuration.inMinutes >= 1) {
+                // Break completed, reset flags
+                setState(() {
+                  _needsBreak = false;
+                  _hasShownRestNotification = false;
+                  _breakStartTime = null;
+                });
+                // Update break status service
+                context.read<BreakStatusService>().setNeedsBreak(false);
+                debugPrint('✅ Break completed (30 mins), all flags reset');
+              }
+            }
+          } else if (continuousDriving > 0) {
+            debugPrint('🚗 User is currently driving (continuous: $continuousDriving)');
+            // User is driving again, reset break timer but keep needsBreak flag
+            _breakStartTime = null;
+
+            if (!_needsBreak) {
+              debugPrint('⚠️ Setting needsBreak to TRUE');
+              setState(() {
+                _needsBreak = true;
+              });
+              // Update break status service
+              context.read<BreakStatusService>().setNeedsBreak(true);
+            }
+
+            // Show notification if not shown yet
+            if (!_hasShownRestNotification) {
+              debugPrint('🔔 SHOWING REST NOTIFICATION');
+              _showRestNotification();
+              _hasShownRestNotification = true;
+
+              // Schedule recurring notification every 2 minutes
+              _scheduleRecurringNotification();
+            } else {
+              debugPrint('ℹ️ Notification already shown, waiting for recurring schedule');
+            }
+          } else {
+            debugPrint('⏹️ Continuous driving is 0 but needsBreak is false - waiting state');
+          }
+        } else {
+          debugPrint('❌ Total driving time ($_totalDrivingMinutesToday) below threshold (1 min)');
+        }
+      } else {
+        debugPrint('❌ API call failed - Status: ${response.statusCode}, Message: ${response.message}');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('💥 Error fetching driving time: $e');
+      debugPrint('Stack trace: $stackTrace');
+    }
+  }
+
+  void _scheduleRecurringNotification() {
+    Future.delayed(const Duration(minutes: 2), () {
+      if (mounted && _needsBreak && _continuousDrivingMinutes > 0) {
+        _showRestNotification();
+        // Recursively schedule next notification
+        _scheduleRecurringNotification();
+      }
+    });
+  }
+
+  void _showRestNotification() {
+    setState(() {
+      _currentTip = '☕ You\'ve been driving for ${(_totalDrivingMinutesToday / 60).toStringAsFixed(1)} hours. Please take a 30-minute break!';
+      _showTip = true;
+    });
+
+    Future.delayed(const Duration(seconds: 10), () {
+      if (mounted) {
+        setState(() => _showTip = false);
+      }
+    });
+  }
+
   void _startTipCycle() {
     Future.delayed(const Duration(seconds: 10), () {
       if (mounted) {
-        _showNextTip();
+        if (!_needsBreak) {
+          _showNextTip();
+        }
         _startTipCycle();
       }
     });
   }
 
-  // HERE ARE THE TIPS
   void _showNextTip() {
     final tips = [
       '💰 Downtown surge active! +2.5x earnings',
-      '☕ You\'ve been driving for 2 hours. Break time?',
       '🎯 Complete 2 more trips for \$15 bonus!',
       '📈 Your earnings are up 20% today!',
       '🚗 Airport runs are busy right now',
@@ -114,6 +247,7 @@ class _MascotWidgetState extends State<MascotWidget> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final atlasService = context.watch<AtlasAIService>();
+    final breakStatusService = context.watch<BreakStatusService>();
 
     if (!atlasService.isEnabled) {
       return const SizedBox.shrink();
@@ -121,7 +255,6 @@ class _MascotWidgetState extends State<MascotWidget> with TickerProviderStateMix
 
     return Stack(
       children: [
-        // Tip bubble
         AnimatedPositioned(
           duration: const Duration(milliseconds: 300),
           bottom: _showTip ? 100 : 80,
@@ -133,8 +266,9 @@ class _MascotWidgetState extends State<MascotWidget> with TickerProviderStateMix
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               constraints: const BoxConstraints(maxWidth: 250),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: _needsBreak ? Colors.orange.shade100 : Colors.white,
                 borderRadius: BorderRadius.circular(16),
+                border: _needsBreak ? Border.all(color: Colors.orange, width: 2) : null,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.1),
@@ -145,16 +279,15 @@ class _MascotWidgetState extends State<MascotWidget> with TickerProviderStateMix
               ),
               child: Text(
                 _currentTip,
-                style: const TextStyle(
-                  color: Colors.black87,
+                style: TextStyle(
+                  color: _needsBreak ? Colors.orange.shade900 : Colors.black87,
                   fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: _needsBreak ? FontWeight.bold : FontWeight.w500,
                 ),
               ),
             ),
           ),
         ),
-        // Happy face
         Positioned(
           bottom: 20,
           right: 20,
@@ -165,27 +298,38 @@ class _MascotWidgetState extends State<MascotWidget> with TickerProviderStateMix
                 offset: Offset(0, _floatingAnimation.value),
                 child: GestureDetector(
                   onTap: _showNextTip,
+                  onLongPress: () {
+                    debugPrint('🧪 Manual test: Triggering rest notification');
+                    setState(() {
+                      _needsBreak = true;
+                      _totalDrivingMinutesToday = 120;
+                    });
+                    context.read<BreakStatusService>().setNeedsBreak(true);
+                    _showRestNotification();
+                  },
                   child: Container(
                     width: 70,
                     height: 70,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: const LinearGradient(
+                      gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        //colors: [Color(0xFFFFC107), Color(0xFFFFB300)],
-                        colors: [Color(0xFF2196F3), Color(0xFF1976D2)],
+                        colors: _needsBreak
+                            ? [Colors.orange, Colors.deepOrange]
+                            : [const Color(0xFF2196F3), const Color(0xFF1976D2)],
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.amber.withOpacity(0.5 * _glowAnimation.value),
+                          color: (_needsBreak ? Colors.orange : Colors.amber)
+                              .withOpacity(0.5 * _glowAnimation.value),
                           blurRadius: 20 * _glowAnimation.value,
                           spreadRadius: 5 * _glowAnimation.value,
                         ),
                       ],
                     ),
                     child: CustomPaint(
-                      painter: HappyFacePainter(),
+                      painter: HappyFacePainter(needsBreak: _needsBreak),
                     ),
                   ),
                 ),
@@ -196,53 +340,64 @@ class _MascotWidgetState extends State<MascotWidget> with TickerProviderStateMix
       ],
     );
   }
-
 }
 
 class HappyFacePainter extends CustomPainter {
+  final bool needsBreak;
+
+  HappyFacePainter({this.needsBreak = false});
+
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
 
-    // Eyes
     final eyePaint = Paint()
       ..color = Colors.white
-      //..color = Color.blue
       ..style = PaintingStyle.fill;
 
-    // Left eye
-    canvas.drawCircle(
-      Offset(center.dx - 12, center.dy - 8),
-      5,
-      eyePaint,
-    );
+    if (needsBreak) {
+      final rect1 = Rect.fromCircle(center: Offset(center.dx - 12, center.dy - 8), radius: 5);
+      canvas.drawArc(rect1, 0, math.pi, false, eyePaint);
 
-    // Right eye
-    canvas.drawCircle(
-      Offset(center.dx + 12, center.dy - 8),
-      5,
-      eyePaint,
-    );
+      final rect2 = Rect.fromCircle(center: Offset(center.dx + 12, center.dy - 8), radius: 5);
+      canvas.drawArc(rect2, 0, math.pi, false, eyePaint);
+    } else {
+      canvas.drawCircle(
+        Offset(center.dx - 12, center.dy - 8),
+        5,
+        eyePaint,
+      );
 
-    // Smile
-    final smilePaint = Paint()
+      canvas.drawCircle(
+        Offset(center.dx + 12, center.dy - 8),
+        5,
+        eyePaint,
+      );
+    }
+    final mouthPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round;
 
-    final smilePath = Path();
-    smilePath.moveTo(center.dx - 15, center.dy + 5);
-    smilePath.quadraticBezierTo(
-      center.dx,
-      center.dy + 18,
-      center.dx + 15,
-      center.dy + 5,
-    );
+    final mouthPath = Path();
 
-    canvas.drawPath(smilePath, smilePaint);
+    if (needsBreak) {
+      mouthPath.moveTo(center.dx - 15, center.dy + 10);
+      mouthPath.lineTo(center.dx + 15, center.dy + 10);
+    } else {
+      mouthPath.moveTo(center.dx - 15, center.dy + 5);
+      mouthPath.quadraticBezierTo(
+        center.dx,
+        center.dy + 18,
+        center.dx + 15,
+        center.dy + 5,
+      );
+    }
+
+    canvas.drawPath(mouthPath, mouthPaint);
   }
 
   @override
-  bool shouldRepaint(HappyFacePainter oldDelegate) => false;
+  bool shouldRepaint(HappyFacePainter oldDelegate) => oldDelegate.needsBreak != needsBreak;
 }
