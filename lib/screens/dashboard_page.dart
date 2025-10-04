@@ -77,8 +77,8 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
     final authService = context.watch<AuthService>();
     final mockData = context.watch<MockDataService>();
     final maskotService = context.watch<MaskotAIService>();
-    final theme = Theme.of(context);
-    final size = MediaQuery.of(context).size;
+    final session = context.watch<NotificationService>();
+
     double mascotSize = MediaQuery.of(context).size.width * 0.15;
     double mascotBottom = 100;
 
@@ -89,7 +89,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
         children: [
           _buildMapInterface(),
           _buildTopBar(context, authService, mockData),
-          if (mockData.currentTripRequest != null) _buildTripRequestCard(context, mockData, maskotService),
+          if (mockData.currentTripRequest != null) _buildTripRequestCard(context, mockData, maskotService, session),
           if (mockData.activeTrip != null) _buildActiveTripCard(context, mockData),
           const MascotWidget(),
           PopupSystem(mascotSize: mascotSize, mascotBottom: mascotBottom),
@@ -100,10 +100,12 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
             onChanged: (goOnline) async {
               if (goOnline) {
                 await context.read<NotificationService>().startRestSession();  // POST /hours/start
+                context.read<MockDataService>().goOnline(); // ADD THIS
               } else {
                 await context.read<NotificationService>().stopRestSession();   // POST /hours/stop
+                context.read<MockDataService>().goOffline();
               }
-              // No mockData.goOnline/goOffline calls: UI derives from session.activeSession
+              // UI derives from session.activeSession
             },
           ),
         ],
@@ -141,7 +143,6 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
         ),
         child: Stack(
           children: [
-            // Menu button on the left
             Positioned(
               left: 0,
               child: Container(
@@ -163,8 +164,6 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                 ),
               ),
             ),
-
-            // Centered earnings
             Center(
               child: AnimatedBuilder(
                 animation: _counterAnimation,
@@ -200,14 +199,14 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
   }
 
 
-  Widget _buildTripRequestCard(BuildContext context, MockDataService mockData, MaskotAIService maskotService) {
+  Widget _buildTripRequestCard(BuildContext context, MockDataService mockData, MaskotAIService maskotService, NotificationService session) {
     final trip = mockData.currentTripRequest!;
 
     return Positioned(
       top: MediaQuery.of(context).padding.top + 100,
       left: 16,
       right: 16,
-      bottom: session.activeSession ? 100 : 160, // <- use backend state, not mock
+      bottom: session.activeSession ? 100 : 160, // use backend state
       child: SingleChildScrollView(
         child: Card(
           elevation: 8,
