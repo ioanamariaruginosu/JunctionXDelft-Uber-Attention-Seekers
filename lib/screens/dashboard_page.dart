@@ -7,6 +7,7 @@ import '../services/mock_data_service.dart';
 import '../services/atlas_ai_service.dart';
 import '../services/notification_service.dart';
 import '../models/trip_model.dart';
+import '../widgets/analysis_state.dart';
 import '../widgets/mascot_widget.dart';
 import '../widgets/map_widget.dart';
 import '../widgets/popup_system.dart';
@@ -202,8 +203,6 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
     final trip = mockData.currentTripRequest!;
     final theme = Theme.of(context);
 
-    atlasService.analyzeTripRequest(trip);
-
     return Positioned(
       top: MediaQuery.of(context).padding.top + 100,
       left: 16,
@@ -211,128 +210,113 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
       bottom: mockData.isOnline ? 100 : 160,
       child: SingleChildScrollView(
         child: Card(
-            elevation: 8,
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'New Trip Request',
-                        style: AppTextStyles.headline4,
-                      ),
-                      TweenAnimationBuilder<int>(
-                        tween: IntTween(begin: 15, end: 0),
-                        duration: const Duration(seconds: 15),
-                        builder: (context, value, child) {
-                          return Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: value <= 5 ? AppColors.error : AppColors.warning,
-                            ),
-                            child: Text(
-                              '$value',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const Icon(Icons.trip_origin, color: AppColors.success),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          trip.pickupLocation,
-                          style: AppTextStyles.bodyMedium,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on, color: AppColors.error),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          trip.dropoffLocation,
-                          style: AppTextStyles.bodyMedium,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildTripDetail(Icons.attach_money, '\\\$${trip.totalEarnings.toStringAsFixed(2)}'),
-                      _buildTripDetail(Icons.straighten, '${trip.distance.toStringAsFixed(1)} mi'),
-                      _buildTripDetail(Icons.schedule, '${trip.estimatedDuration.inMinutes} min'),
-                      if (trip.surge > 1.0) _buildTripDetail(Icons.bolt, '${trip.surge.toStringAsFixed(1)}x'),
-                    ],
-                  ),
-                  if (atlasService.currentSuggestion != null) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.atlasGlow.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.atlasGlow),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.assistant, color: AppColors.atlasGlow),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              atlasService.currentSuggestion!.split('\n').first,
-                              style: TextStyle(color: theme.colorScheme.onSurface),
+          elevation: 8,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'New Trip Request',
+                      style: AppTextStyles.headline4,
+                    ),
+                    TweenAnimationBuilder<int>(
+                      tween: IntTween(begin: 15, end: 0),
+                      duration: const Duration(seconds: 15),
+                      builder: (context, value, child) {
+                        return Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: value <= 5 ? AppColors.error : AppColors.warning,
+                          ),
+                          child: Text(
+                            '$value',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.trip_origin, color: AppColors.success),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        trip.pickupLocation,
+                        style: AppTextStyles.bodyMedium,
                       ),
                     ),
                   ],
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => mockData.declineTrip(),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.error,
-                          ),
-                          child: const Text('Decline'),
-                        ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.location_on, color: AppColors.error),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        trip.dropoffLocation,
+                        style: AppTextStyles.bodyMedium,
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => mockData.acceptTrip(),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.success,
-                          ),
-                          child: const Text('Accept'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildTripDetail(Icons.attach_money, '\$${trip.totalEarnings.toStringAsFixed(2)}'),
+                    _buildTripDetail(Icons.straighten, '${trip.distance.toStringAsFixed(1)} mi'),
+                    _buildTripDetail(Icons.schedule, '${trip.estimatedDuration.inMinutes} min'),
+                    if (trip.surge > 1.0) _buildTripDetail(Icons.bolt, '${trip.surge.toStringAsFixed(1)}x'),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Use _AtlasAnalysis widget to cache the Future
+                AtlasAnalysis(
+                  trip: trip,
+                  atlasService: atlasService,
+                ),
+
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => mockData.declineTrip(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error,
                         ),
+                        child: const Text('Decline'),
                       ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => mockData.acceptTrip(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.success,
+                        ),
+                        child: const Text('Accept'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
+        ),
       ),
     );
   }

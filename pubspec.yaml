@@ -32,6 +32,7 @@ dependencies:
   flutter_map: ^8.2.2
   latlong2: ^0.9.1
   http: ^1.5.0
+  csv: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -40,3 +41,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/data/rides_trips.csv
+    - assets/data/surge_by_hour.csv

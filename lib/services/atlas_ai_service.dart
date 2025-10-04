@@ -141,7 +141,7 @@ class AtlasAIService extends ChangeNotifier {
     try {
       // Send trip data to backend using ApiClient
       final response = await ApiClient.post(
-        '/api/analyze-trip',
+        '/analyze-trip',
         body: {
           'profitabilityScore': trip.profitabilityScore,
           'totalEarnings': trip.totalEarnings,
@@ -170,7 +170,6 @@ class AtlasAIService extends ChangeNotifier {
       setState(AtlasState.idle);
     });
 
-    notifyListeners();
     return _currentSuggestion!;
   }
 

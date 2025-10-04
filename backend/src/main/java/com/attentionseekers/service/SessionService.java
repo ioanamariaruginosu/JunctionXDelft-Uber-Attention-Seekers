@@ -2,6 +2,7 @@ package com.attentionseekers.service;
 
 import com.attentionseekers.model.SessionInfo;
 import com.attentionseekers.model.SessionPeriod;
+import org.springframework.stereotype.Service;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -9,6 +10,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /** Stateless service that operates on SessionInfo. */
+@Service
 public class SessionService {
 
     private final Clock clock;

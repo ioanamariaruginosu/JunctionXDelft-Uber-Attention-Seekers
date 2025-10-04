@@ -9,6 +9,7 @@ import java.time.ZonedDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -17,6 +18,7 @@ public class DemandService {
     private final DemandDataLoader dataLoader;
     private final ZoneId zoneId;
 
+    @Autowired
     public DemandService(DemandDataLoader dataLoader) {
         this(dataLoader, ZoneId.systemDefault());
     }

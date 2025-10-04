@@ -7,7 +7,7 @@ public class TripAnalysisRequest {
     private double profitabilityScore;
     private double totalEarnings;
     private int estimatedDuration; // in minutes
-    private double distance;
+    private double distance; // in miles or km
     private Double surgeMultiplier; // nullable
     private String pickupLocation;
     private String dropoffLocation;
