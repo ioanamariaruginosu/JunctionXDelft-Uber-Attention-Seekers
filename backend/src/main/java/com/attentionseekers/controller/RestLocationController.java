@@ -16,11 +16,11 @@ public class RestLocationController {
         this.service = service;
     }
 
-    @GetMapping("/nearby")
+    @GetMapping("/nearby/{lat}/{lon}/{limit}")
     public List<RestLocation> getNearby(
-            @RequestParam double lat,
-            @RequestParam double lon,
-            @RequestParam(defaultValue = "3") int limit) {
+            @PathVariable double lat,
+            @PathVariable double lon,
+            @PathVariable int limit) {
         return service.findClosest(lat, lon, limit);
     }
 }
