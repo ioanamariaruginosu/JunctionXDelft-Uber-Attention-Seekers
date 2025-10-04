@@ -4,7 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:go_router/go_router.dart';
 import '../services/mock_data_service.dart';
 import '../services/auth_service.dart';
-import '../services/atlas_ai_service.dart';
+import '../services/maskot_ai_service.dart';
 import '../utils/theme.dart';
 import '../models/earnings_model.dart';
 
@@ -17,13 +17,13 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   bool _showStats = false;
-  bool _atlasEnabled = true;
+  bool _maskotEnabled = true;
 
   @override
   Widget build(BuildContext context) {
     final mockData = context.watch<MockDataService>();
     final authService = context.watch<AuthService>();
-    final atlasService = context.watch<AtlasAIService>();
+    final maskotService = context.watch<MaskotAIService>();
     final theme = Theme.of(context);
     final user = authService.currentUser;
 
@@ -110,28 +110,28 @@ class _ProfilePageState extends State<ProfilePage> {
             Card(
               child: SwitchListTile(
                 title: Text(
-                  'Atlas AI Assistant',
+                  'Maskot AI Assistant',
                   style: AppTextStyles.bodyLarge.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 subtitle: const Text('Show helpful tips and earnings insights'),
-                value: _atlasEnabled,
+                value: _maskotEnabled,
                 onChanged: (value) {
                   setState(() {
-                    _atlasEnabled = value;
-                    atlasService.setEnabled(value);
+                    _maskotEnabled = value;
+                    maskotService.setEnabled(value);
                   });
                 },
                 secondary: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: _atlasEnabled ? Colors.amber.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
+                    color: _maskotEnabled ? Colors.amber.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.emoji_emotions,
-                    color: _atlasEnabled ? Colors.amber : Colors.grey,
+                    color: _maskotEnabled ? Colors.amber : Colors.grey,
                   ),
                 ),
               ),

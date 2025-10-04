@@ -5,27 +5,27 @@ import '../models/trip_model.dart';
 import '../utils/api_client.dart';
 import '../utils/constants.dart';
 
-class AtlasAIService extends ChangeNotifier {
+class MaskotAIService extends ChangeNotifier {
   final Random _random = Random();
   final List<ChatMessage> _messages = [];
 
-  AtlasState _currentState = AtlasState.idle;
+  MaskotState _currentState = MaskotState.idle;
   String? _currentSuggestion;
   bool _isTyping = false;
   bool _isEnabled = true;
 
   List<ChatMessage> get messages => _messages;
-  AtlasState get currentState => _currentState;
+  MaskotState get currentState => _currentState;
   String? get currentSuggestion => _currentSuggestion;
   bool get isTyping => _isTyping;
   bool get isEnabled => _isEnabled;
 
-  AtlasAIService() {
-    _initializeAtlas();
+  MaskotAIService() {
+    _initializeMaskot();
   }
 
-  void _initializeAtlas() {
-    final greeting = Constants.atlasGreetings[_random.nextInt(Constants.atlasGreetings.length)];
+  void _initializeMaskot() {
+    final greeting = Constants.maskotGreetings[_random.nextInt(Constants.maskotGreetings.length)];
     _addMessage(ChatMessage(
       text: greeting,
       isUser: false,
@@ -33,7 +33,7 @@ class AtlasAIService extends ChangeNotifier {
     ));
   }
 
-  void setState(AtlasState state) {
+  void setState(MaskotState state) {
     _currentState = state;
     notifyListeners();
   }
@@ -122,7 +122,7 @@ class AtlasAIService extends ChangeNotifier {
     final responses = [
       'I\'m here to help! What would you like to know?',
       'Great question! Let me analyze the data for you...',
-      Constants.atlasEncouragements[_random.nextInt(Constants.atlasEncouragements.length)],
+      Constants.maskotEncouragements[_random.nextInt(Constants.maskotEncouragements.length)],
       'Based on current patterns, you\'re making smart choices!',
     ];
     return responses[_random.nextInt(responses.length)];
@@ -136,7 +136,7 @@ class AtlasAIService extends ChangeNotifier {
   }
 
   Future<String> analyzeTripRequest(TripModel trip) async {
-    setState(AtlasState.analyzing);
+    setState(MaskotState.analyzing);
 
     try {
       // Send trip data to backend using ApiClient
@@ -167,7 +167,7 @@ class AtlasAIService extends ChangeNotifier {
     }
 
     Timer(const Duration(seconds: 2), () {
-      setState(AtlasState.idle);
+      setState(MaskotState.idle);
     });
 
     return _currentSuggestion!;
@@ -195,11 +195,11 @@ class AtlasAIService extends ChangeNotifier {
 
   void provideWellnessReminder() {
     _currentSuggestion = '☕ Wellness Check: You\'ve been driving for 3 hours. Time for a 15-minute break? Your reaction time may be slower when tired.';
-    setState(AtlasState.suggesting);
+    setState(MaskotState.suggesting);
     notifyListeners();
 
     Timer(const Duration(seconds: 10), () {
-      setState(AtlasState.idle);
+      setState(MaskotState.idle);
     });
   }
 
@@ -208,21 +208,21 @@ class AtlasAIService extends ChangeNotifier {
     final surge = (1.5 + _random.nextDouble() * 1.5).toStringAsFixed(1);
 
     _currentSuggestion = '🔥 High demand detected!\n📍 $location\n💰 ${surge}x surge active\n⏱️ 3-5 min wait time';
-    setState(AtlasState.alerting);
+    setState(MaskotState.alerting);
     notifyListeners();
 
     Timer(const Duration(seconds: 10), () {
-      setState(AtlasState.idle);
+      setState(MaskotState.idle);
     });
   }
 
   void celebrateAchievement(String achievement) {
-    setState(AtlasState.celebrating);
+    setState(MaskotState.celebrating);
     _currentSuggestion = '🎉 Achievement Unlocked: $achievement!';
     notifyListeners();
 
     Timer(const Duration(seconds: 5), () {
-      setState(AtlasState.idle);
+      setState(MaskotState.idle);
     });
   }
 
@@ -235,7 +235,7 @@ class AtlasAIService extends ChangeNotifier {
 
   void clearMessages() {
     _messages.clear();
-    _initializeAtlas();
+    _initializeMaskot();
     notifyListeners();
   }
 }
@@ -252,7 +252,7 @@ class ChatMessage {
   });
 }
 
-enum AtlasState {
+enum MaskotState {
   idle,
   speaking,
   thinking,

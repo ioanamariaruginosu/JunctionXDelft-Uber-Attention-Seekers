@@ -3,10 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
 import '../services/mock_data_service.dart';
-import '../services/atlas_ai_service.dart';
+import '../services/maskot_ai_service.dart';
 import '../services/notification_service.dart';
 import '../models/trip_model.dart';
-import '../utils/atlas_speech_bubble.dart';
+import '../utils/maskot_speech_bubble.dart';
 import '../widgets/mascot_widget.dart';
 import '../widgets/map_widget.dart';
 import '../widgets/popup_system.dart';
@@ -74,7 +74,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
   Widget build(BuildContext context) {
     final authService = context.watch<AuthService>();
     final mockData = context.watch<MockDataService>();
-    final atlasService = context.watch<AtlasAIService>();
+    final maskotService = context.watch<MaskotAIService>();
     final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
     double mascotSize = MediaQuery.of(context).size.width * 0.15;
@@ -87,7 +87,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
         children: [
           _buildMapInterface(),
           _buildTopBar(context, authService, mockData),
-          if (mockData.currentTripRequest != null) _buildTripRequestCard(context, mockData, atlasService),
+          if (mockData.currentTripRequest != null) _buildTripRequestCard(context, mockData, maskotService),
           if (mockData.activeTrip != null) _buildActiveTripCard(context, mockData),
           const MascotWidget(),
           PopupSystem(mascotSize: mascotSize, mascotBottom: mascotBottom),
@@ -200,7 +200,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
   }
 
 
-  Widget _buildTripRequestCard(BuildContext context, MockDataService mockData, AtlasAIService atlasService) {
+  Widget _buildTripRequestCard(BuildContext context, MockDataService mockData, MaskotAIService maskotService) {
     final trip = mockData.currentTripRequest!;
 
     return Positioned(
@@ -283,7 +283,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                 ),
                 const SizedBox(height: 16),
 
-                AtlasSpeechBubble(trip: trip, atlasService: atlasService),
+                MaskotSpeechBubble(trip: trip, maskotService: maskotService),
 
                 const SizedBox(height: 16),
                 Row(

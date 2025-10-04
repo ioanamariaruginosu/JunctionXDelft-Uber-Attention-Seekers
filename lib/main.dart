@@ -9,7 +9,7 @@ import 'screens/settings_page.dart';
 import 'screens/profile_page.dart';
 import 'services/auth_service.dart';
 import 'services/mock_data_service.dart';
-import 'services/atlas_ai_service.dart';
+import 'services/maskot_ai_service.dart';
 import 'services/notification_service.dart';
 import 'utils/theme.dart';
 
@@ -32,7 +32,7 @@ class UberCopilotApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => MockDataService()),
-        ChangeNotifierProvider(create: (_) => AtlasAIService()),
+        ChangeNotifierProvider(create: (_) => MaskotAIService()),
         ChangeNotifierProvider(create: (_) => NotificationService()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],

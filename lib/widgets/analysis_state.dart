@@ -1,30 +1,30 @@
 import '../models/trip_model.dart';
-import '../services/atlas_ai_service.dart';
+import '../services/maskot_ai_service.dart';
 import 'package:flutter/material.dart';
 
 import '../utils/theme.dart';
 
-class AtlasAnalysis extends StatefulWidget {
+class MaskotAnalysis extends StatefulWidget {
   final TripModel trip;
-  final AtlasAIService atlasService;
+  final MaskotAIService maskotService;
 
-  const AtlasAnalysis({
+  const MaskotAnalysis({
     required this.trip,
-    required this.atlasService,
+    required this.maskotService,
   });
 
   @override
-  State<AtlasAnalysis> createState() => _AtlasAnalysisState();
+  State<MaskotAnalysis> createState() => _MaskotAnalysisState();
 }
 
-class _AtlasAnalysisState extends State<AtlasAnalysis> {
+class _MaskotAnalysisState extends State<MaskotAnalysis> {
   late final Future<String> _analysisFuture;
 
   @override
   void initState() {
     super.initState();
     // Call the API only ONCE when widget is created
-    _analysisFuture = widget.atlasService.analyzeTripRequest(widget.trip);
+    _analysisFuture = widget.maskotService.analyzeTripRequest(widget.trip);
   }
 
   @override
@@ -38,9 +38,9 @@ class _AtlasAnalysisState extends State<AtlasAnalysis> {
           return Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.atlasGlow.withOpacity(0.1),
+              color: AppColors.maskotGlow.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.atlasGlow),
+              border: Border.all(color: AppColors.maskotGlow),
             ),
             child: Row(
               children: [
@@ -49,13 +49,13 @@ class _AtlasAnalysisState extends State<AtlasAnalysis> {
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.atlasGlow),
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.maskotGlow),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Atlas AI analyzing...',
+                    'Maskot AI analyzing...',
                     style: TextStyle(
                       color: theme.colorScheme.onSurface,
                       fontStyle: FontStyle.italic,
@@ -94,20 +94,20 @@ class _AtlasAnalysisState extends State<AtlasAnalysis> {
           return Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.atlasGlow.withOpacity(0.1),
+              color: AppColors.maskotGlow.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.atlasGlow),
+              border: Border.all(color: AppColors.maskotGlow),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.assistant, color: AppColors.atlasGlow),
+                    const Icon(Icons.assistant, color: AppColors.maskotGlow),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Atlas AI Recommendation',
+                        'Maskot AI Recommendation',
                         style: TextStyle(
                           color: theme.colorScheme.onSurface,
                           fontWeight: FontWeight.bold,

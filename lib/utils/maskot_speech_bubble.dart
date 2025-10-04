@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 import '../models/trip_model.dart';
-import '../services/atlas_ai_service.dart';
+import '../services/maskot_ai_service.dart';
 
-class AtlasSpeechBubble extends StatefulWidget {
+class MaskotSpeechBubble extends StatefulWidget {
   final TripModel trip;
-  final AtlasAIService atlasService;
+  final MaskotAIService maskotService;
 
-  const AtlasSpeechBubble({
+  const MaskotSpeechBubble({
     Key? key,
     required this.trip,
-    required this.atlasService,
+    required this.maskotService,
   }) : super(key: key);
 
   @override
-  State<AtlasSpeechBubble> createState() => _AtlasSpeechBubbleState();
+  State<MaskotSpeechBubble> createState() => _MaskotSpeechBubbleState();
 }
 
-class _AtlasSpeechBubbleState extends State<AtlasSpeechBubble>
+class _MaskotSpeechBubbleState extends State<MaskotSpeechBubble>
     with SingleTickerProviderStateMixin {
   late final Future<String> _analysisFuture;
   late AnimationController _animationController;
@@ -26,7 +26,7 @@ class _AtlasSpeechBubbleState extends State<AtlasSpeechBubble>
   @override
   void initState() {
     super.initState();
-    _analysisFuture = widget.atlasService.analyzeTripRequest(widget.trip);
+    _analysisFuture = widget.maskotService.analyzeTripRequest(widget.trip);
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 600),
@@ -92,14 +92,14 @@ class _AtlasSpeechBubbleState extends State<AtlasSpeechBubble>
       ),
       child: Row(
         children: [
-          _buildAtlasAvatar(),
+          _buildMaskotAvatar(),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Atlas AI',
+                  'Maskot AI',
                   style: TextStyle(
                     color: const Color(0xFF9C27B0),
                     fontWeight: FontWeight.bold,
@@ -148,14 +148,14 @@ class _AtlasSpeechBubbleState extends State<AtlasSpeechBubble>
       ),
       child: Row(
         children: [
-          _buildAtlasAvatar(isError: true),
+          _buildMaskotAvatar(isError: true),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Atlas AI',
+                  'Maskot AI',
                   style: TextStyle(
                     color: Colors.red,
                     fontWeight: FontWeight.bold,
@@ -229,10 +229,10 @@ class _AtlasSpeechBubbleState extends State<AtlasSpeechBubble>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Atlas header
+              // Maskot header
               Row(
                 children: [
-                  _buildAtlasAvatar(borderColor: borderColor),
+                  _buildMaskotAvatar(borderColor: borderColor),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -241,7 +241,7 @@ class _AtlasSpeechBubbleState extends State<AtlasSpeechBubble>
                         Row(
                           children: [
                             Text(
-                              'Atlas AI',
+                              'Maskot AI',
                               style: TextStyle(
                                 color: borderColor,
                                 fontWeight: FontWeight.bold,
@@ -276,9 +276,9 @@ class _AtlasSpeechBubbleState extends State<AtlasSpeechBubble>
               ),
               const SizedBox(height: 12),
 
-              // Full recommendation text formatted as Atlas speaking
+              // Full recommendation text formatted as Maskot speaking
               Text(
-                _formatAsAtlasSpeech(recommendation),
+                _formatAsMaskotSpeech(recommendation),
                 style: TextStyle(
                   color: theme.colorScheme.onSurface,
                   fontSize: 13,
@@ -292,7 +292,7 @@ class _AtlasSpeechBubbleState extends State<AtlasSpeechBubble>
     );
   }
 
-  Widget _buildAtlasAvatar({bool isError = false, Color? borderColor}) {
+  Widget _buildMaskotAvatar({bool isError = false, Color? borderColor}) {
     return Container(
       width: 40,
       height: 40,
@@ -324,8 +324,8 @@ class _AtlasSpeechBubbleState extends State<AtlasSpeechBubble>
     );
   }
 
-  String _formatAsAtlasSpeech(String recommendation) {
-    // Convert the backend response into Atlas speaking naturally
+  String _formatAsMaskotSpeech(String recommendation) {
+    // Convert the backend response into Maskot speaking naturally
     String formatted = recommendation;
 
     // Replace technical markers with conversational intro
