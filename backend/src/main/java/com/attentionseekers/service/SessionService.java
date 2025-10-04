@@ -8,6 +8,8 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import org.springframework.stereotype.Service;   // <-- add this import
+
 
 @Service
 /** Stateless service that operates on SessionInfo. */

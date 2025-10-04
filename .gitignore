@@ -7,3 +7,4 @@ android
 backend/src/data/database
 ios
 backend/target
+backend/sessions/demo.json
