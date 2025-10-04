@@ -16,7 +16,8 @@ public class RestLocationService {
     private final List<RestLocation> locations;
 
     public RestLocationService(ObjectMapper mapper) throws IOException {
-        FeatureCollection data = mapper.readValue(new File("./backend/src/data/rest_locations.json"), FeatureCollection.class);
+
+        FeatureCollection data = mapper.readValue(new File("C:\\Users\\thea\\JunctionXDelft-Uber-Attention-Seekers\\backend\\src\\data\\rest_locations.json"), FeatureCollection.class);
 
         this.locations = data.getFeatures().stream()
                 .map(f -> {
