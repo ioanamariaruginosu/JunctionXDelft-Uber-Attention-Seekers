@@ -17,6 +17,7 @@ public class DemandService {
     private final DemandDataLoader dataLoader;
     private final ZoneId zoneId;
 
+    @Autowired
     public DemandService(DemandDataLoader dataLoader) {
         this(dataLoader, ZoneId.systemDefault());
     }
