@@ -77,8 +77,8 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
     final authService = context.watch<AuthService>();
     final mockData = context.watch<MockDataService>();
     final atlasService = context.watch<AtlasAIService>();
-    final theme = Theme.of(context);
-    final size = MediaQuery.of(context).size;
+    final session = context.watch<NotificationService>(); // <-- add this
+
     double mascotSize = MediaQuery.of(context).size.width * 0.15;
     double mascotBottom = 100;
 
@@ -89,8 +89,13 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
         children: [
           _buildMapInterface(),
           _buildTopBar(context, authService, mockData),
-          if (mockData.currentTripRequest != null) _buildTripRequestCard(context, mockData, atlasService),
-          if (mockData.activeTrip != null) _buildActiveTripCard(context, mockData),
+
+          if (mockData.currentTripRequest != null)
+            _buildTripRequestCard(context, mockData, atlasService, session), // <-- pass session
+
+          if (mockData.activeTrip != null)
+            _buildActiveTripCard(context, mockData),
+
           const MascotWidget(),
           PopupSystem(mascotSize: mascotSize, mascotBottom: mascotBottom),
 
@@ -103,7 +108,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
               } else {
                 await context.read<NotificationService>().stopRestSession();   // POST /hours/stop
               }
-              // No mockData.goOnline/goOffline calls: UI derives from session.activeSession
+              // UI derives from session.activeSession
             },
           ),
         ],
@@ -141,7 +146,6 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
         ),
         child: Stack(
           children: [
-            // Menu button on the left
             Positioned(
               left: 0,
               child: Container(
@@ -163,8 +167,6 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                 ),
               ),
             ),
-
-            // Centered earnings
             Center(
               child: AnimatedBuilder(
                 animation: _counterAnimation,
@@ -214,7 +216,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
       top: MediaQuery.of(context).padding.top + 100,
       left: 16,
       right: 16,
-      bottom: session.activeSession ? 100 : 160, // <- use backend state, not mock
+      bottom: session.activeSession ? 100 : 160, // use backend state
       child: SingleChildScrollView(
         child: Card(
           elevation: 8,
@@ -279,29 +281,6 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                     if (trip.surge > 1.0) _buildTripDetail(Icons.bolt, '${trip.surge.toStringAsFixed(1)}x'),
                   ],
                 ),
-                if (atlasService.currentSuggestion != null) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.atlasGlow.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.atlasGlow),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.assistant, color: AppColors.atlasGlow),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            atlasService.currentSuggestion!.split('\n').first,
-                            style: TextStyle(color: theme.colorScheme.onSurface),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
                 const SizedBox(height: 16),
                 Row(
                   children: [
