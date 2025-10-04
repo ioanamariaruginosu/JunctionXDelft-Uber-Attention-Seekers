@@ -5,11 +5,11 @@ import com.attentionseekers.service.DemandService;
 import com.attentionseekers.service.UserType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
 
 @RestController
 @RequestMapping("/demand")
@@ -22,22 +22,37 @@ public class DemandController {
     }
 
     @GetMapping("/now")
-    public ResponseEntity<DemandResponse> now(@RequestParam(value = "userType", required = false) String userType) {
-        UserType type = parseUserType(userType);
-        return ResponseEntity.ok(demandService.getCurrentDemand(type));
+    public ResponseEntity<DemandResponse> now(@org.springframework.web.bind.annotation.RequestParam(name = "userType", required = false, defaultValue = "rider") String userType,
+                                              @org.springframework.web.bind.annotation.RequestParam(name = "cityId", required = false) Integer cityId) {
+    DemandResponse resp = cityId != null ? demandService.getCurrentDemand(UserType.from(userType), cityId) : demandService.getCurrentDemand(UserType.from(userType));
+        return ResponseEntity.ok(resp);
     }
 
     @GetMapping("/next2h")
-    public ResponseEntity<DemandResponse> next2h(@RequestParam(value = "userType", required = false) String userType) {
-        UserType type = parseUserType(userType);
-        return ResponseEntity.ok(demandService.getNext2HoursDemand(type));
+    public ResponseEntity<DemandResponse> next2h(@org.springframework.web.bind.annotation.RequestParam(name = "userType", required = false, defaultValue = "rider") String userType,
+                                                 @org.springframework.web.bind.annotation.RequestParam(name = "cityId", required = false) Integer cityId) {
+    DemandResponse resp = cityId != null ? demandService.getNext2HoursDemand(UserType.from(userType), cityId) : demandService.getNext2HoursDemand(UserType.from(userType));
+        return ResponseEntity.ok(resp);
     }
 
-    private UserType parseUserType(String raw) {
-        try {
-            return UserType.from(raw);
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+    @GetMapping("/cities")
+    public ResponseEntity<java.util.List<Integer>> cities() {
+        return ResponseEntity.ok(demandService.availableCityIds());
+    }
+
+    @GetMapping("/at")
+    public ResponseEntity<DemandResponse> at(@org.springframework.web.bind.annotation.RequestParam(name = "userType", required = false, defaultValue = "rider") String userType,
+                                             @org.springframework.web.bind.annotation.RequestParam(name = "cityId", required = true) Integer cityId,
+                                             @org.springframework.web.bind.annotation.RequestParam(name = "datetime", required = false) String datetime) {
+        // parse ISO date/time with offset if provided, otherwise use now
+        ZonedDateTime zdt;
+        if (datetime == null || datetime.isBlank()) {
+            zdt = ZonedDateTime.now(ZoneId.systemDefault());
+        } else {
+            OffsetDateTime odt = OffsetDateTime.parse(datetime);
+            zdt = odt.atZoneSameInstant(ZoneId.systemDefault());
         }
+        DemandResponse resp = demandService.getDemandAt(UserType.from(userType), cityId, zdt);
+        return ResponseEntity.ok(resp);
     }
 }
