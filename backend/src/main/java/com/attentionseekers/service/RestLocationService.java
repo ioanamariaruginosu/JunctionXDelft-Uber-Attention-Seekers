@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,8 +18,32 @@ public class RestLocationService {
     private final List<RestLocation> locations;
 
     public RestLocationService(ObjectMapper mapper) throws IOException {
+        // Try multiple candidate locations so the service works whether the working
+        // directory is the repo root, the backend module root, or when the file is
+        // packaged on the classpath.
+        File candidate = new File("./backend/src/data/rest_locations.json");
+        if (!candidate.exists()) candidate = new File("./src/data/rest_locations.json");
+        if (!candidate.exists()) candidate = new File("./src/main/resources/data/rest_locations.json");
 
-        FeatureCollection data = mapper.readValue(new File("./backend/src/data/rest_locations.json"), FeatureCollection.class);
+        FeatureCollection data = null;
+        if (candidate.exists()) {
+            data = mapper.readValue(candidate, FeatureCollection.class);
+        } else {
+            // try loading from classpath
+            InputStream is = getClass().getClassLoader().getResourceAsStream("rest_locations.json");
+            if (is == null) {
+                is = getClass().getClassLoader().getResourceAsStream("data/rest_locations.json");
+            }
+            if (is != null) {
+                data = mapper.readValue(is, FeatureCollection.class);
+            }
+        }
+
+        if (data == null) {
+            // file not found on disk or classpath - disable locations gracefully
+            this.locations = Collections.emptyList();
+            return;
+        }
 
         this.locations = data.getFeatures().stream()
                 .map(f -> {
