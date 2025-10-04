@@ -21,7 +21,7 @@ import java.util.UUID;
 @Service
 public class AuthService {
 
-    private static final String DATA_DIR = "./backend/src/data";
+    private static final String DATA_DIR = "./backend/src/data/database";
     private static final String USER_FILE = DATA_DIR + "/user.json";
     private final ObjectMapper objectMapper;
 
