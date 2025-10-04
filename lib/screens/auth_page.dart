@@ -141,17 +141,10 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
                   ),
                 ),
                 const SizedBox(height: 32),
-                SizedBox(
-                  height: _tabController.index == 0 ? 400 : 600,
-                  child: TabBarView(
-                    controller: _tabController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    children: [
-                      _buildLoginForm(context, authService),
-                      _buildRegisterForm(context, authService),
-                    ],
-                  ),
-                ),
+                if (_tabController.index == 0)
+                  _buildLoginForm(context, authService)
+                else
+                  _buildRegisterForm(context, authService),
               ],
             ),
           ),
