@@ -95,6 +95,15 @@ public class HoursService {
         return 0;
     }
 
+    public boolean isActive(String userId) {
+        return getSessionInfo(userId).hasOngoingSession();
+    }
+
+    public java.time.LocalDateTime getCurrentSessionStart(String userId) {
+        return getSessionInfo(userId).getCurrentSessionStart();
+    }
+
+
     /* ===================== DTO for persistence ===================== */
     /**
      * Snapshot DTO so we can persist SessionInfo cleanly without exposing setters

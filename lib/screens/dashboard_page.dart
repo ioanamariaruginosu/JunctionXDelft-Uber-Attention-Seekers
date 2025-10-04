@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:math' as math;
 import '../services/auth_service.dart';
 import '../services/mock_data_service.dart';
-import '../services/atlas_ai_service.dart';
+import '../services/maskot_ai_service.dart';
 import '../services/notification_service.dart';
 import '../models/trip_model.dart';
+import '../utils/maskot_speech_bubble.dart';
 import '../widgets/mascot_widget.dart';
 import '../widgets/map_widget.dart';
 import '../widgets/popup_system.dart';
@@ -30,6 +30,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
   @override
   void initState() {
     super.initState();
+
     _pulseController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
@@ -40,24 +41,25 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
       vsync: this,
     );
 
-    _pulseAnimation = Tween<double>(
-      begin: 0.95,
-      end: 1.05,
-    ).animate(CurvedAnimation(
-      parent: _pulseController,
-      curve: Curves.easeInOut,
-    ));
+    _pulseAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
 
-    _counterAnimation = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(CurvedAnimation(
-      parent: _counterController,
-      curve: Curves.easeOut,
-    ));
+    _counterAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _counterController, curve: Curves.easeOut),
+    );
 
+    // Initialize backend-powered session state (no local timers, no auto-start)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<NotificationService>().startAutoNotifications();
+      final auth = context.read<AuthService>();
+      final userId = auth.currentUser?.id ?? 'demo';
+
+      context.read<NotificationService>().initRestTimer(
+        userId: userId,
+        demoMode: false,           // no frontend minute ticking
+        demoSecondsPerMinute: 1,   // ignored when demoMode=false
+      );
+
       _counterController.forward();
     });
   }
@@ -66,7 +68,6 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
   void dispose() {
     _pulseController.dispose();
     _counterController.dispose();
-    context.read<NotificationService>().stopAutoNotifications();
     super.dispose();
   }
 
@@ -74,9 +75,11 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
   Widget build(BuildContext context) {
     final authService = context.watch<AuthService>();
     final mockData = context.watch<MockDataService>();
-    final atlasService = context.watch<AtlasAIService>();
-    final theme = Theme.of(context);
-    final size = MediaQuery.of(context).size;
+    final maskotService = context.watch<MaskotAIService>();
+    final session = context.watch<NotificationService>();
+
+    double mascotSize = MediaQuery.of(context).size.width * 0.15;
+    double mascotBottom = 100;
 
     return Scaffold(
       key: _scaffoldKey,
@@ -85,20 +88,23 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
         children: [
           _buildMapInterface(),
           _buildTopBar(context, authService, mockData),
-          if (mockData.currentTripRequest != null) _buildTripRequestCard(context, mockData, atlasService),
+          if (mockData.currentTripRequest != null) _buildTripRequestCard(context, mockData, maskotService, session),
           if (mockData.activeTrip != null) _buildActiveTripCard(context, mockData),
-          const MascotWidget(), // change icon
-          const PopupSystem(),
+          const MascotWidget(),
+          PopupSystem(mascotSize: mascotSize, mascotBottom: mascotBottom),
 
-          // Add the slide to go online widget
+          // Bottom online/offline slider wired ONLY to backend state
           SlideToGoOnline(
-            isOnline: mockData.isOnline,
-            onChanged: (value) {
-              if (value) {
-                mockData.goOnline();
+            isOnline: session.activeSession, // starts false unless server says active
+            onChanged: (goOnline) async {
+              if (goOnline) {
+                await context.read<NotificationService>().startRestSession();  // POST /hours/start
+                context.read<MockDataService>().goOnline(); // ADD THIS
               } else {
-                mockData.goOffline();
+                await context.read<NotificationService>().stopRestSession();   // POST /hours/stop
+                context.read<MockDataService>().goOffline();
               }
+              // UI derives from session.activeSession
             },
           ),
         ],
@@ -136,33 +142,27 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
         ),
         child: Stack(
           children: [
-            // Menu button on the left
             Positioned(
               left: 0,
-              child: Positioned(
-                left: 0,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.menu),
-                    color: theme.colorScheme.primary,
-                    onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                  ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.menu),
+                  color: theme.colorScheme.primary,
+                  onPressed: () => _scaffoldKey.currentState?.openDrawer(),
                 ),
               ),
             ),
-
-            // Centered earnings
             Center(
               child: AnimatedBuilder(
                 animation: _counterAnimation,
@@ -198,141 +198,119 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
   }
 
 
-  Widget _buildTripRequestCard(BuildContext context, MockDataService mockData, AtlasAIService atlasService) {
+  Widget _buildTripRequestCard(BuildContext context, MockDataService mockData, MaskotAIService maskotService, NotificationService session) {
     final trip = mockData.currentTripRequest!;
-    final theme = Theme.of(context);
-
-    atlasService.analyzeTripRequest(trip);
 
     return Positioned(
       top: MediaQuery.of(context).padding.top + 100,
       left: 16,
       right: 16,
-      bottom: mockData.isOnline ? 100 : 160,
+      bottom: session.activeSession ? 100 : 160, // use backend state
       child: SingleChildScrollView(
         child: Card(
-            elevation: 8,
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'New Trip Request',
-                        style: AppTextStyles.headline4,
-                      ),
-                      TweenAnimationBuilder<int>(
-                        tween: IntTween(begin: 15, end: 0),
-                        duration: const Duration(seconds: 15),
-                        builder: (context, value, child) {
-                          return Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: value <= 5 ? AppColors.error : AppColors.warning,
-                            ),
-                            child: Text(
-                              '$value',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const Icon(Icons.trip_origin, color: AppColors.success),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          trip.pickupLocation,
-                          style: AppTextStyles.bodyMedium,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on, color: AppColors.error),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          trip.dropoffLocation,
-                          style: AppTextStyles.bodyMedium,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildTripDetail(Icons.attach_money, '\\\$${trip.totalEarnings.toStringAsFixed(2)}'),
-                      _buildTripDetail(Icons.straighten, '${trip.distance.toStringAsFixed(1)} mi'),
-                      _buildTripDetail(Icons.schedule, '${trip.estimatedDuration.inMinutes} min'),
-                      if (trip.surge > 1.0) _buildTripDetail(Icons.bolt, '${trip.surge.toStringAsFixed(1)}x'),
-                    ],
-                  ),
-                  if (atlasService.currentSuggestion != null) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.atlasGlow.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.atlasGlow),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.assistant, color: AppColors.atlasGlow),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              atlasService.currentSuggestion!.split('\n').first,
-                              style: TextStyle(color: theme.colorScheme.onSurface),
+          elevation: 8,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'New Trip Request',
+                      style: AppTextStyles.headline4,
+                    ),
+                    TweenAnimationBuilder<int>(
+                      tween: IntTween(begin: 15, end: 0),
+                      duration: const Duration(seconds: 15),
+                      builder: (context, value, child) {
+                        return Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: value <= 5 ? AppColors.error : AppColors.warning,
+                          ),
+                          child: Text(
+                            '$value',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.trip_origin, color: AppColors.success),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        trip.pickupLocation,
+                        style: AppTextStyles.bodyMedium,
                       ),
                     ),
                   ],
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => mockData.declineTrip(),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.error,
-                          ),
-                          child: const Text('Decline'),
-                        ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.location_on, color: AppColors.error),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        trip.dropoffLocation,
+                        style: AppTextStyles.bodyMedium,
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => mockData.acceptTrip(),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.success,
-                          ),
-                          child: const Text('Accept'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildTripDetail(Icons.attach_money, '\$${trip.totalEarnings.toStringAsFixed(2)}'),
+                    _buildTripDetail(Icons.straighten, '${trip.distance.toStringAsFixed(1)} mi'),
+                    _buildTripDetail(Icons.schedule, '${trip.estimatedDuration.inMinutes} min'),
+                    if (trip.surge > 1.0) _buildTripDetail(Icons.bolt, '${trip.surge.toStringAsFixed(1)}x'),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                MaskotSpeechBubble(trip: trip, maskotService: maskotService),
+
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => mockData.declineTrip(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error,
                         ),
+                        child: const Text('Decline'),
                       ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => mockData.acceptTrip(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.success,
+                        ),
+                        child: const Text('Accept'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
+        ),
       ),
     );
   }
@@ -344,9 +322,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
         const SizedBox(height: 4),
         Text(
           value,
-          style: AppTextStyles.bodySmall.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.bold),
         ),
       ],
     );
@@ -393,15 +369,9 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
             children: [
               Icon(statusIcon, color: Colors.white, size: 32),
               const SizedBox(height: 8),
-              Text(
-                statusText,
-                style: AppTextStyles.headline4.copyWith(color: Colors.white),
-              ),
+              Text(statusText, style: AppTextStyles.headline4.copyWith(color: Colors.white)),
               const SizedBox(height: 8),
-              Text(
-                trip.dropoffLocation,
-                style: AppTextStyles.bodyMedium.copyWith(color: Colors.white),
-              ),
+              Text(trip.dropoffLocation, style: AppTextStyles.bodyMedium.copyWith(color: Colors.white)),
             ],
           ),
         ),
@@ -418,9 +388,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
         padding: EdgeInsets.zero,
         children: [
           DrawerHeader(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary,
-            ),
+            decoration: BoxDecoration(color: theme.colorScheme.primary),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -429,10 +397,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                   backgroundColor: theme.colorScheme.surface,
                   child: Text(
                     user?.fullName.substring(0, 1).toUpperCase() ?? 'U',
-                    style: TextStyle(
-                      fontSize: 24,
-                      color: theme.colorScheme.primary,
-                    ),
+                    style: TextStyle(fontSize: 24, color: theme.colorScheme.primary),
                   ),
                 ),
                 const SizedBox(height: 12),

@@ -154,6 +154,8 @@ class TripModel {
     );
   }
 
+  get surgeMultiplier => 1.5;
+
   static TripModel generateMockTrip() {
     final random = Random();
     final locations = [
