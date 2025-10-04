@@ -1,0 +1,13 @@
+[ {
+  "id" : "53ffcf22-a6d3-4823-a9ba-90c1159f7797",
+  "fullName" : "Matei",
+  "email" : "stefmatei22@gmail.com",
+  "phoneNumber" : "0610343888",
+  "password" : "-2054162492",
+  "vehicleType" : "motorcycle",
+  "licenseNumber" : "3636363",
+  "rating" : 5.0,
+  "totalTrips" : 0,
+  "totalEarnings" : 0.0,
+  "joinedDate" : [ 2025, 10, 4, 17, 45, 25, 426591000 ]
+} ]
