@@ -96,4 +96,4 @@ class UserModel {
   }
 }
 
-enum VehicleType { car, motorcycle, bicycle, scooter }
+enum VehicleType { car, motorcycle, bicycle, scooter, suv, bike }

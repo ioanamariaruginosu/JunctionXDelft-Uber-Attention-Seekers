@@ -4,5 +4,6 @@ build
 .flutter-plugins-dependencies
 *.lock
 android
+backend/src/data/database
 ios
 backend/target
