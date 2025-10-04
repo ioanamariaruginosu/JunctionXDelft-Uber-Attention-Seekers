@@ -1,20 +1,16 @@
 package com.attentionseekers.dto;
 
-import com.attentionseekers.service.UserType;
-
 import java.time.Instant;
 import java.util.Map;
 
 public class DemandResponse {
     private final Instant generatedAt;
-    private final String window;
-    private final UserType userType;
-    private final Map<String, DriverDemandDto> zones;
+    private final String range;
+    private final Map<String, ZoneDemandDto> zones;
 
-    public DemandResponse(Instant generatedAt, String window, UserType userType, Map<String, DriverDemandDto> zones) {
+    public DemandResponse(Instant generatedAt, String range, Map<String, ZoneDemandDto> zones) {
         this.generatedAt = generatedAt;
-        this.window = window;
-        this.userType = userType;
+        this.range = range;
         this.zones = zones;
     }
 
@@ -22,15 +18,11 @@ public class DemandResponse {
         return generatedAt;
     }
 
-    public String getWindow() {
-        return window;
+    public String getRange() {
+        return range;
     }
 
-    public UserType getUserType() {
-        return userType;
-    }
-
-    public Map<String, DriverDemandDto> getZones() {
+    public Map<String, ZoneDemandDto> getZones() {
         return zones;
     }
 }
