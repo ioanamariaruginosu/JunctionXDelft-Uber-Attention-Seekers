@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:math' as math;
 import '../services/auth_service.dart';
 import '../services/mock_data_service.dart';
 import '../services/atlas_ai_service.dart';
 import '../services/notification_service.dart';
 import '../models/trip_model.dart';
-import '../widgets/analysis_state.dart';
+import '../utils/atlas_speech_bubble.dart';
 import '../widgets/mascot_widget.dart';
 import '../widgets/map_widget.dart';
 import '../widgets/popup_system.dart';
@@ -201,7 +200,6 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
 
   Widget _buildTripRequestCard(BuildContext context, MockDataService mockData, AtlasAIService atlasService) {
     final trip = mockData.currentTripRequest!;
-    final theme = Theme.of(context);
 
     return Positioned(
       top: MediaQuery.of(context).padding.top + 100,
@@ -283,11 +281,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                 ),
                 const SizedBox(height: 16),
 
-                // Use _AtlasAnalysis widget to cache the Future
-                AtlasAnalysis(
-                  trip: trip,
-                  atlasService: atlasService,
-                ),
+                AtlasSpeechBubble(trip: trip, atlasService: atlasService),
 
                 const SizedBox(height: 16),
                 Row(
