@@ -139,9 +139,26 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
             // Menu button on the left
             Positioned(
               left: 0,
-              child: IconButton(
-                icon: const Icon(Icons.menu),
-                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+              child: Positioned(
+                left: 0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.menu),
+                    color: theme.colorScheme.primary,
+                    onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                  ),
+                ),
               ),
             ),
 
