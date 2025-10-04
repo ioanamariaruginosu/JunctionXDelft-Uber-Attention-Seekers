@@ -1,4 +1,7 @@
 build
 .idea
-.dart_tool
+.dart_tool/*
 .flutter-plugins-dependencies
+*.lock
+android
+ios
