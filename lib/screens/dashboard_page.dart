@@ -13,6 +13,11 @@ import '../widgets/popup_system.dart';
 import '../utils/theme.dart';
 import '../widgets/slide_to_go_online.dart';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
+// WEB-ONLY import; safe for Chrome builds.
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
+
 class DashboardPage extends StatefulWidget {
   const DashboardPage({Key? key}) : super(key: key);
 
@@ -20,16 +25,22 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> with TickerProviderStateMixin {
+class _DashboardPageState extends State<DashboardPage>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late AnimationController _pulseController;
   late AnimationController _counterController;
   late Animation<double> _pulseAnimation;
   late Animation<double> _counterAnimation;
 
+  // Keep backend base and user id so we can stop session on close
+  late final Uri _backendBase = Uri.parse('http://localhost:8080');
+  String? _userId;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     _pulseController = AnimationController(
       duration: const Duration(seconds: 2),
@@ -52,20 +63,50 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
     // Initialize backend-powered session state (no local timers, no auto-start)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = context.read<AuthService>();
-      final userId = auth.currentUser?.id ?? 'demo';
+      _userId = auth.currentUser?.id ?? 'demo';
 
       context.read<NotificationService>().initRestTimer(
-        userId: userId,
+        baseUrl: _backendBase,
+        userId: _userId!,
         demoMode: false,           // no frontend minute ticking
         demoSecondsPerMinute: 1,   // ignored when demoMode=false
       );
+
+      // Web-only: ensure /hours/stop is sent when the tab closes
+      _setupWebBeforeUnload();
 
       _counterController.forward();
     });
   }
 
+  // Web: send a beacon to stop the session when the tab/window is closing
+  void _setupWebBeforeUnload() {
+    if (!kIsWeb || _userId == null) return;
+    html.window.onBeforeUnload.listen((_) {
+      final url = _backendBase
+          .resolve('hours/stop')
+          .replace(queryParameters: {'userId': _userId!}).toString();
+      // Beacon survives page unload, more reliable than fetch on close
+      html.window.navigator.sendBeacon(url, '');
+    });
+  }
+
+  // Called when app moves between foreground/background, etc.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      // Best effort: don't await in lifecycle callback
+      context.read<NotificationService>().stopRestSession();
+    }
+  }
+
   @override
   void dispose() {
+    // Best-effort stop on widget teardown
+    context.read<NotificationService>().stopRestSession();
+
+    WidgetsBinding.instance.removeObserver(this);
+
     _pulseController.dispose();
     _counterController.dispose();
     super.dispose();
@@ -77,7 +118,6 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
     final mockData = context.watch<MockDataService>();
     final maskotService = context.watch<MaskotAIService>();
     final session = context.watch<NotificationService>();
-
     double mascotSize = MediaQuery.of(context).size.width * 0.15;
     double mascotBottom = 100;
 
@@ -104,7 +144,6 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                 await context.read<NotificationService>().stopRestSession();   // POST /hours/stop
                 context.read<MockDataService>().goOffline();
               }
-              // UI derives from session.activeSession
             },
           ),
         ],
