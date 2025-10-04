@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
 import '../services/atlas_ai_service.dart';
+import 'popup_system.dart';
 
 class MascotWidget extends StatefulWidget {
   const MascotWidget({
@@ -21,6 +22,7 @@ class _MascotWidgetState extends State<MascotWidget> with TickerProviderStateMix
   late Animation<double> _rotationAnimation;
 
   String _currentTip = '';
+  String _currentImage = 'assets/images/Mascot_normal.png'; // default image
   bool _showTip = false;
 
   @override
@@ -67,6 +69,21 @@ class _MascotWidgetState extends State<MascotWidget> with TickerProviderStateMix
     _startTipCycle();
   }
 
+  void _updateMascotImage(String tip) {
+  if (tip.contains('surge')) {
+    _currentImage = 'assets/images/Mascot_angry.png';
+  } else if (tip.contains('Break') || tip.contains('wellness')) {
+    _currentImage = 'assets/images/Mascot_tired.png';
+  } else if (tip.contains('bonus')) {
+    _currentImage = 'assets/images/Mascot_angry.png';
+  } else if (tip.contains('weather') || tip.contains('🌤')) {
+    _currentImage = 'assets/images/Mascot_normal.png';
+  } else {
+    _currentImage = 'assets/images/Mascot_normal.png';
+  }
+}
+
+
   @override
   void dispose() {
     _floatingController.dispose();
@@ -97,41 +114,65 @@ class _MascotWidgetState extends State<MascotWidget> with TickerProviderStateMix
       '💵 You\'re on track to hit your daily goal',
       '🌟 5 rides until weekend bonus!',
       '⚡ Quick trips near you - maximize earnings',
+      '🌤 Current weather: Light Rain',
     ];
 
+    final tip = tips[math.Random().nextInt(tips.length)];
+
     setState(() {
-      _currentTip = tips[math.Random().nextInt(tips.length)];
+      _currentTip = tip;
       _showTip = true;
+      _updateMascotImage(tip);
     });
 
     Future.delayed(const Duration(seconds: 5), () {
       if (mounted) {
-        setState(() => _showTip = false);
+        setState(() {
+          _showTip = false;
+        });
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final atlasService = context.watch<AtlasAIService>();
+    double mascotSize = MediaQuery.of(context).size.width * 0.15;
+    double mascotBottom = 80 + _floatingAnimation.value; // current mascot bottom
 
-    if (!atlasService.isEnabled) {
-      return const SizedBox.shrink();
-    }
+    final atlasService = context.watch<AtlasAIService>();
+    if (!atlasService.isEnabled) return const SizedBox.shrink();
 
     return Stack(
       children: [
-        // Tip bubble
-        AnimatedPositioned(
-          duration: const Duration(milliseconds: 300),
-          bottom: _showTip ? 100 : 80,
+        // Popup above mascot
+        PopupSystem(
+          mascotSize: mascotSize,
+          mascotBottom: mascotBottom,
+        ),
+
+        // Mascot itself
+        Positioned(
+          bottom: mascotBottom,
           right: 20,
-          child: AnimatedOpacity(
-            opacity: _showTip ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 300),
+          child: GestureDetector(
+            onTap: _showNextTip,
+            child: Container(
+              width: mascotSize,
+              height: mascotSize,
+              child: ClipOval(
+                child: Image.asset(_currentImage, fit: BoxFit.contain),
+              ),
+            ),
+          ),
+        ),
+
+        // Tip bubble (optional)
+        if (_showTip)
+          Positioned(
+            bottom: mascotBottom + mascotSize + 10,
+            right: 20,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              constraints: const BoxConstraints(maxWidth: 250),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
@@ -153,49 +194,10 @@ class _MascotWidgetState extends State<MascotWidget> with TickerProviderStateMix
               ),
             ),
           ),
-        ),
-        // Happy face
-        Positioned(
-          bottom: 20,
-          right: 20,
-          child: AnimatedBuilder(
-            animation: Listenable.merge([_floatingAnimation, _glowAnimation]),
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(0, _floatingAnimation.value),
-                child: GestureDetector(
-                  onTap: _showNextTip,
-                  child: Container(
-                    width: 70,
-                    height: 70,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        //colors: [Color(0xFFFFC107), Color(0xFFFFB300)],
-                        colors: [Color(0xFF2196F3), Color(0xFF1976D2)],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.amber.withOpacity(0.5 * _glowAnimation.value),
-                          blurRadius: 20 * _glowAnimation.value,
-                          spreadRadius: 5 * _glowAnimation.value,
-                        ),
-                      ],
-                    ),
-                    child: CustomPaint(
-                      painter: HappyFacePainter(),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
       ],
     );
   }
+
 
 }
 
