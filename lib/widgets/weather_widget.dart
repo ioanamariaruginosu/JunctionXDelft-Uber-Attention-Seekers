@@ -53,12 +53,10 @@ class _WeatherWidgetState extends State<WeatherWidget> {
         return;
       }
 
-      // ✅ Get the user's current location
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
 
-      // ✅ Fetch weather using WeatherService
       final result = await _weatherService.getCurrentWeather(
         lat: position.latitude,
         lon: position.longitude,
@@ -66,15 +64,44 @@ class _WeatherWidgetState extends State<WeatherWidget> {
 
       if (!mounted) return;
 
-      setState(() {
-        if (result != null) {
+      if (result != null) {
+        setState(() {
           weather = result['weather'];
           windSpeed = result['windSpeed'];
-        } else {
-          weather = 'Weather unavailable';
+          _loading = false;
+        });
+
+        final String lowerWeather = weather.toLowerCase();
+        final double windKmH = windSpeed * 3.6;
+
+        // Build alerts
+        String? alertMessage;
+        if (windKmH > 25) {
+          alertMessage = '💨 Be careful: strong winds coming!';
+        } else if (lowerWeather.contains('rain')) {
+          alertMessage = '🌧️ Rain expected — drive carefully!';
+        } else if (lowerWeather.contains('snow')) {
+          alertMessage = '❄️ Snowfall detected — roads may be slippery!';
         }
-        _loading = false;
-      });
+
+        // Show snackbar alert if any
+        if (alertMessage != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(alertMessage!),
+                backgroundColor: Colors.redAccent,
+                duration: const Duration(seconds: 5),
+              ),
+            );
+          });
+        }
+      } else {
+        setState(() {
+          weather = 'Weather unavailable';
+          _loading = false;
+        });
+      }
     } catch (e) {
       setState(() {
         weather = 'Error: $e';
