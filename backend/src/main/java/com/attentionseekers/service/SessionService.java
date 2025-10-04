@@ -11,9 +11,9 @@ import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;   // <-- add this import
 
 
-@Service
 /** Stateless service that operates on SessionInfo. */
-class SessionService {
+@Service
+public class SessionService {
 
     private final Clock clock;
 

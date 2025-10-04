@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-
 import '../services/auth_service.dart';
 import '../services/mock_data_service.dart';
-import '../services/atlas_ai_service.dart';
+import '../services/maskot_ai_service.dart';
 import '../services/notification_service.dart';
 import '../models/trip_model.dart';
+import '../utils/maskot_speech_bubble.dart';
 import '../widgets/mascot_widget.dart';
 import '../widgets/map_widget.dart';
 import '../widgets/popup_system.dart';
@@ -55,7 +55,6 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
       final userId = auth.currentUser?.id ?? 'demo';
 
       context.read<NotificationService>().initRestTimer(
-        baseUrl: Uri.parse('http://localhost:8080'), // adjust if needed
         userId: userId,
         demoMode: false,           // no frontend minute ticking
         demoSecondsPerMinute: 1,   // ignored when demoMode=false
@@ -76,8 +75,8 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
   Widget build(BuildContext context) {
     final authService = context.watch<AuthService>();
     final mockData = context.watch<MockDataService>();
-    final atlasService = context.watch<AtlasAIService>();
-    final session = context.watch<NotificationService>(); // <-- add this
+    final maskotService = context.watch<MaskotAIService>();
+    final session = context.watch<NotificationService>();
 
     double mascotSize = MediaQuery.of(context).size.width * 0.15;
     double mascotBottom = 100;
@@ -89,13 +88,8 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
         children: [
           _buildMapInterface(),
           _buildTopBar(context, authService, mockData),
-
-          if (mockData.currentTripRequest != null)
-            _buildTripRequestCard(context, mockData, atlasService, session), // <-- pass session
-
-          if (mockData.activeTrip != null)
-            _buildActiveTripCard(context, mockData),
-
+          if (mockData.currentTripRequest != null) _buildTripRequestCard(context, mockData, maskotService, session),
+          if (mockData.activeTrip != null) _buildActiveTripCard(context, mockData),
           const MascotWidget(),
           PopupSystem(mascotSize: mascotSize, mascotBottom: mascotBottom),
 
@@ -105,8 +99,10 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
             onChanged: (goOnline) async {
               if (goOnline) {
                 await context.read<NotificationService>().startRestSession();  // POST /hours/start
+                context.read<MockDataService>().goOnline(); // ADD THIS
               } else {
                 await context.read<NotificationService>().stopRestSession();   // POST /hours/stop
+                context.read<MockDataService>().goOffline();
               }
               // UI derives from session.activeSession
             },
@@ -201,16 +197,9 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
     );
   }
 
-  Widget _buildTripRequestCard(
-    BuildContext context,
-    MockDataService mockData,
-    AtlasAIService atlasService,
-    NotificationService session,
-  ) {
-    final trip = mockData.currentTripRequest!;
-    final theme = Theme.of(context);
 
-    atlasService.analyzeTripRequest(trip);
+  Widget _buildTripRequestCard(BuildContext context, MockDataService mockData, MaskotAIService maskotService, NotificationService session) {
+    final trip = mockData.currentTripRequest!;
 
     return Positioned(
       top: MediaQuery.of(context).padding.top + 100,
@@ -228,7 +217,10 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('New Trip Request', style: AppTextStyles.headline4),
+                    const Text(
+                      'New Trip Request',
+                      style: AppTextStyles.headline4,
+                    ),
                     TweenAnimationBuilder<int>(
                       tween: IntTween(begin: 15, end: 0),
                       duration: const Duration(seconds: 15),
@@ -257,7 +249,10 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                     const Icon(Icons.trip_origin, color: AppColors.success),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(trip.pickupLocation, style: AppTextStyles.bodyMedium),
+                      child: Text(
+                        trip.pickupLocation,
+                        style: AppTextStyles.bodyMedium,
+                      ),
                     ),
                   ],
                 ),
@@ -267,7 +262,10 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                     const Icon(Icons.location_on, color: AppColors.error),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(trip.dropoffLocation, style: AppTextStyles.bodyMedium),
+                      child: Text(
+                        trip.dropoffLocation,
+                        style: AppTextStyles.bodyMedium,
+                      ),
                     ),
                   ],
                 ),
@@ -275,19 +273,25 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildTripDetail(Icons.attach_money, '\\\$${trip.totalEarnings.toStringAsFixed(2)}'),
+                    _buildTripDetail(Icons.attach_money, '\$${trip.totalEarnings.toStringAsFixed(2)}'),
                     _buildTripDetail(Icons.straighten, '${trip.distance.toStringAsFixed(1)} mi'),
                     _buildTripDetail(Icons.schedule, '${trip.estimatedDuration.inMinutes} min'),
                     if (trip.surge > 1.0) _buildTripDetail(Icons.bolt, '${trip.surge.toStringAsFixed(1)}x'),
                   ],
                 ),
                 const SizedBox(height: 16),
+
+                MaskotSpeechBubble(trip: trip, maskotService: maskotService),
+
+                const SizedBox(height: 16),
                 Row(
                   children: [
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () => mockData.declineTrip(),
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error,
+                        ),
                         child: const Text('Decline'),
                       ),
                     ),
@@ -295,7 +299,9 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () => mockData.acceptTrip(),
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.success,
+                        ),
                         child: const Text('Accept'),
                       ),
                     ),

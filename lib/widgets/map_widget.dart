@@ -1,13 +1,12 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
 import 'dart:math' as math;
+
+import '../utils/api_client.dart';
 
 class DemandZone {
   final LatLng center;
@@ -72,14 +71,6 @@ class _RealMapWidgetState extends State<RealMapWidget> {
   List<RestLocation> _restLocations = [];
   Timer? _zoneTimer;
 
-  // Update based on your platform
-  // For Android emulator: use 10.0.2.2
-  // For iOS simulator: use localhost
-  // For physical device: use your computer's IP address
-  static const String baseUrl = 'http://localhost:8080'; // Android emulator
-  // static const String baseUrl = 'http://localhost:8080'; // iOS simulator
-  // static const String baseUrl = 'http://192.168.1.x:8080'; // Physical device
-
   @override
   void initState() {
     super.initState();
@@ -95,20 +86,17 @@ class _RealMapWidgetState extends State<RealMapWidget> {
 
   Future<void> _fetchRestLocations() async {
     try {
-      final url = Uri.parse(
-          '$baseUrl/api/locations/nearby/${_currentLocation.latitude}/${_currentLocation.longitude}/10');
+      final response = await ApiClient.get(
+        '/locations/nearby/${_currentLocation.latitude}/${_currentLocation.longitude}/10',
+      );
 
-      final response = await http.get(url);
-
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-
+      if (response.success && response.data != null) {
         // Handle both array and GeoJSON formats
         List<dynamic> features;
-        if (jsonData is Map && jsonData.containsKey('features')) {
-          features = jsonData['features'] as List<dynamic>;
-        } else if (jsonData is List) {
-          features = jsonData;
+        if (response.data is Map && response.data.containsKey('features')) {
+          features = response.data['features'] as List<dynamic>;
+        } else if (response.data is List) {
+          features = response.data;
         } else {
           return;
         }
@@ -122,12 +110,12 @@ class _RealMapWidgetState extends State<RealMapWidget> {
               return null;
             }
           })
-              .whereType<RestLocation>() // Filter out nulls
+              .whereType<RestLocation>()
               .toList();
         });
       }
     } catch (e, stackTrace) {
-      print('💥 Error fetching rest locations: $e');
+      print('Error fetching rest locations: $e');
       print('Stack trace: $stackTrace');
     }
   }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
-import '../services/atlas_ai_service.dart';
+import '../services/maskot_ai_service.dart';
 import 'popup_system.dart';
 
 class MascotWidget extends StatefulWidget {
@@ -139,8 +139,8 @@ class _MascotWidgetState extends State<MascotWidget> with TickerProviderStateMix
     double mascotSize = MediaQuery.of(context).size.width * 0.15;
     double mascotBottom = 80 + _floatingAnimation.value; // current mascot bottom
 
-    final atlasService = context.watch<AtlasAIService>();
-    if (!atlasService.isEnabled) return const SizedBox.shrink();
+    final maskotService = context.watch<MaskotAIService>();
+    if (!maskotService.isEnabled) return const SizedBox.shrink();
 
     return Stack(
       children: [

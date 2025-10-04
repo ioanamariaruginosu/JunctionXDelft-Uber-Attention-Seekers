@@ -9,7 +9,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/hours")
+@RequestMapping("/api/hours")
+@CrossOrigin(origins = "*")
 public class HoursController {
 
     @Autowired

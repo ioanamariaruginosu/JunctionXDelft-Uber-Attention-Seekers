@@ -37,8 +37,8 @@ class AppColors {
   static const Color demandMedium = Color(0xFFF59E0B);
   static const Color demandLow = Color(0xFF10B981);
 
-  static const Color atlasGlow = Color(0xFF6366F1);
-  static const Color atlasSecondary = Color(0xFF818CF8);
+  static const Color maskotGlow = Color(0xFF6366F1);
+  static const Color maskotSecondary = Color(0xFF818CF8);
 }
 
 class AppTextStyles {

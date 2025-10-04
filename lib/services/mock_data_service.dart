@@ -6,6 +6,7 @@ import '../models/trip_model.dart';
 import '../models/earnings_model.dart';
 import '../models/notification_model.dart';
 import '../utils/constants.dart';
+import '../utils/historical_data_generator.dart';
 
 class MockDataService extends ChangeNotifier {
   final Random _random = Random();
@@ -40,6 +41,11 @@ class MockDataService extends ChangeNotifier {
   MockDataService() {
     _initializeTodayEarnings();
     _initializeDemandZones();
+    _loadHistoricalData();
+  }
+
+  Future<void> _loadHistoricalData() async {
+    await HistoricalTripGenerator.instance.loadHistoricalData();
   }
 
   void _initializeTodayEarnings() {
@@ -129,17 +135,17 @@ class MockDataService extends ChangeNotifier {
 
     _tripRequestTimer = Timer.periodic(
       Duration(seconds: _random.nextInt(60) + 30),
-      (_) => _generateTripRequest(),
+          (_) => _generateTripRequest(),
     );
 
     _demandUpdateTimer = Timer.periodic(
       const Duration(minutes: 5),
-      (_) => _updateDemandZones(),
+          (_) => _updateDemandZones(),
     );
 
     _earningsUpdateTimer = Timer.periodic(
       const Duration(seconds: 1),
-      (_) => _updateTimeOnline(),
+          (_) => _updateTimeOnline(),
     );
   }
 
@@ -152,7 +158,8 @@ class MockDataService extends ChangeNotifier {
   void _generateTripRequest() {
     if (!_isOnline || _activeTrip != null || _currentTripRequest != null) return;
 
-    _currentTripRequest = TripModel.generateMockTrip();
+    // Generate trip based on historical data
+    _currentTripRequest = HistoricalTripGenerator.instance.generateRealisticTrip();
 
     _addNotification(NotificationModel(
       id: const Uuid().v4(),
@@ -300,7 +307,7 @@ class MockDataService extends ChangeNotifier {
         _addNotification(NotificationModel(
           id: const Uuid().v4(),
           title: 'Bonus Completed! 🎉',
-          message: '${bonus.title}: +\\\$${bonus.reward.toStringAsFixed(2)}',
+          message: '${bonus.title}: +\$${bonus.reward.toStringAsFixed(2)}',
           type: NotificationType.bonus,
           priority: NotificationPriority.high,
         ));
@@ -322,7 +329,7 @@ class MockDataService extends ChangeNotifier {
     });
 
     final highestDemandZone = _demandZones.entries.reduce(
-      (a, b) => a.value > b.value ? a : b,
+          (a, b) => a.value > b.value ? a : b,
     );
 
     if (highestDemandZone.value > 2.0) {
