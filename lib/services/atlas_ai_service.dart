@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/trip_model.dart';
+import '../utils/api_client.dart';
 import '../utils/constants.dart';
 
 class AtlasAIService extends ChangeNotifier {
@@ -134,9 +135,47 @@ class AtlasAIService extends ChangeNotifier {
     return '$hour:${future.minute.toString().padLeft(2, '0')} $period';
   }
 
-  String analyzeTripRequest(TripModel trip) {
+  Future<String> analyzeTripRequest(TripModel trip) async {
     setState(AtlasState.analyzing);
 
+    try {
+      // Send trip data to backend using ApiClient
+      final response = await ApiClient.post(
+        '/api/analyze-trip',
+        body: {
+          'profitabilityScore': trip.profitabilityScore,
+          'totalEarnings': trip.totalEarnings,
+          'estimatedDuration': trip.estimatedDuration.inMinutes,
+          'distance': trip.distance,
+          'surgeMultiplier': trip.surgeMultiplier,
+          'pickupLocation': trip.pickupLocation,
+          'dropoffLocation': trip.dropoffLocation,
+        },
+      );
+
+      if (response.success && response.dataAsMap != null) {
+        _currentSuggestion = response.dataAsMap!['suggestion'];
+      } else {
+        _currentSuggestion = '❌ Error: ${response.message ?? "Failed to analyze trip"}';
+      }
+    } catch (e) {
+      print('Error calling backend: $e');
+      _currentSuggestion = '❌ Network error. Using offline analysis.';
+
+      // Fallback to local logic
+      _currentSuggestion = _getLocalSuggestion(trip);
+    }
+
+    Timer(const Duration(seconds: 2), () {
+      setState(AtlasState.idle);
+    });
+
+    notifyListeners();
+    return _currentSuggestion!;
+  }
+
+// Fallback local analysis
+  String _getLocalSuggestion(TripModel trip) {
     final profitScore = trip.profitabilityScore;
     String recommendation;
     String reason;
@@ -152,14 +191,7 @@ class AtlasAIService extends ChangeNotifier {
       reason = 'Low earnings per minute, no surge active';
     }
 
-    _currentSuggestion = '$recommendation\n$reason\n\n💰 Earnings: \\\$${trip.totalEarnings.toStringAsFixed(2)}\n⏱️ Time: ${trip.estimatedDuration.inMinutes} mins\n📍 Distance: ${trip.distance.toStringAsFixed(1)} miles';
-
-    Timer(const Duration(seconds: 2), () {
-      setState(AtlasState.idle);
-    });
-
-    notifyListeners();
-    return _currentSuggestion!;
+    return '$recommendation\n$reason\n\n💰 Earnings: \$${trip.totalEarnings.toStringAsFixed(2)}\n⏱️ Time: ${trip.estimatedDuration.inMinutes} mins\n📍 Distance: ${trip.distance.toStringAsFixed(1)} miles';
   }
 
   void provideWellnessReminder() {
