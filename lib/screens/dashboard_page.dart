@@ -197,7 +197,6 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
     );
   }
 
-
   Widget _buildTripRequestCard(BuildContext context, MockDataService mockData, MaskotAIService maskotService, NotificationService session) {
     final trip = mockData.currentTripRequest!;
 
@@ -298,7 +297,11 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                     const SizedBox(width: 16),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () => mockData.acceptTrip(),
+                        onPressed: () {
+                          mockData.acceptTrip();
+                          // NEW: accepting a new trip clears rest pins
+                          context.read<NotificationService>().hideRestPinsAndReset();
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.success,
                         ),
