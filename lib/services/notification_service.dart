@@ -1,14 +1,13 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 
 import '../models/notification_model.dart';
 import '../models/trip_model.dart';
+import '../utils/api_client.dart';
 
 class NotificationService extends ChangeNotifier {
   // ========= Popup/notification state =========
@@ -77,7 +76,7 @@ class NotificationService extends ChangeNotifier {
     final notification = NotificationModel(
       id: const Uuid().v4(),
       title: '💰 Bonus Progress',
-      message: '$bonusTitle: $current/$target trips\nComplete for +\\\$$reward!',
+      message: '$bonusTitle: $current/$target trips\nComplete for +\$${reward}!',
       type: NotificationType.bonus,
       priority: NotificationPriority.normal,
     );
@@ -153,7 +152,7 @@ class NotificationService extends ChangeNotifier {
     _autoNotificationTimer?.cancel();
     _autoNotificationTimer = Timer.periodic(
       Duration(minutes: 3 + _random.nextInt(5)),
-      (_) => _showRandomNotification(),
+          (_) => _showRandomNotification(),
     );
   }
 
@@ -164,11 +163,11 @@ class NotificationService extends ChangeNotifier {
 
   void _showRandomNotification() {
     final notifications = [
-      () => showDemandAlert('Downtown', 1.5 + _random.nextDouble()),
-      () => showBonusProgress('Morning Rush', _random.nextInt(3) + 1, 5, 15.0),
-      () => showWellnessReminder('You\'ve been driving for 2 hours. Time for a stretch?'),
-      () => showAtlasInsight('Traffic is lighter on parallel routes. Consider alternate paths.'),
-      () => showEarningsUpdate(25.50 + _random.nextDouble() * 20, 'in the last hour'),
+          () => showDemandAlert('Downtown', 1.5 + _random.nextDouble()),
+          () => showBonusProgress('Morning Rush', _random.nextInt(3) + 1, 5, 15.0),
+          () => showWellnessReminder('You\'ve been driving for 2 hours. Time for a stretch?'),
+          () => showAtlasInsight('Traffic is lighter on parallel routes. Consider alternate paths.'),
+          () => showEarningsUpdate(25.50 + _random.nextDouble() * 20, 'in the last hour'),
     ];
     notifications[_random.nextInt(notifications.length)]();
   }
@@ -190,82 +189,69 @@ class NotificationService extends ChangeNotifier {
 
   // ========= Rest timer (backend source of truth) =========
 
-  // Server-reported counters/state
   int continuousMinutes = 0;
   int todayMinutes = 0;
   bool activeSession = false;
-  DateTime? startedAt; // optional, display only
+  DateTime? startedAt;
 
-  // Thresholds (alerts fire purely from server minutes)
-  static const int restSoonThreshold = 16;   // 1h45m
-  static const int takeBreakThreshold = 17; // 2h
+  static const int restSoonThreshold = 3;
+  static const int takeBreakThreshold = 3;
 
-  // Demo: shorter poll interval when demoMode = true
   bool _restDemoMode = false;
   int _restDemoSecondsPerMinute = 1;
 
-  // Backend
-  Uri? _restBaseUrl; // normalized to trailing slash
   String? _restUserId;
-
-  // Poll timer (no local ticking)
   Timer? _restPollTimer;
 
-  // Alert flags
   bool _restAlert95Fired = false;
   bool _restAlert120Fired = false;
 
   Duration get _pollInterval =>
       _restDemoMode ? const Duration(seconds: 5) : const Duration(minutes: 1);
 
-  /// Initialize rest timer network settings. Call once before starting.
   void initRestTimer({
-    required Uri baseUrl,
     required String userId,
     bool demoMode = false,
-    int demoSecondsPerMinute = 1, // kept for compatibility; affects only polling speed
+    int demoSecondsPerMinute = 1,
   }) {
-    _restBaseUrl = baseUrl.path.endsWith('/')
-        ? baseUrl
-        : baseUrl.replace(path: '${baseUrl.path}/');
-
     _restUserId = userId;
     _restDemoMode = demoMode;
     _restDemoSecondsPerMinute = demoSecondsPerMinute;
 
     _stopPolling();
 
-    // ignore: avoid_print
-    print('initRestTimer demo=$_restDemoMode demoSecondsPerMinute=$_restDemoSecondsPerMinute base=$_restBaseUrl user=$_restUserId');
+    print('initRestTimer demo=$_restDemoMode user=$_restUserId');
 
-    // First sync immediately, then start polling.
     _syncRestWithServer(forceNotifyOnce: true);
     _startPolling();
   }
 
-  /// Start a session (backend authoritative). No local ticking.
   Future<void> startRestSession() async {
-    if (_restBaseUrl != null && _restUserId != null) {
+    if (_restUserId != null) {
       try {
-        final uri = _restBaseUrl!.resolve('hours/start').replace(queryParameters: {'userId': _restUserId});
-        await http.post(uri).timeout(const Duration(seconds: 5));
-      } catch (_) {/* ignore */}
+        await ApiClient.post(
+          '/hours/start',
+          queryParams: {'userId': _restUserId!},
+        );
+      } catch (e) {
+        print('startRestSession error: $e');
+      }
     }
-    // Immediately refresh from server so UI updates without waiting for next poll.
-    // ignore: avoid_print
     print('startRestSession called');
     await _syncRestWithServer(forceNotifyOnce: true);
   }
 
-  /// Stop a session (backend authoritative). No local resets; trust server.
   Future<void> stopRestSession() async {
-    if (_restBaseUrl != null && _restUserId != null) {
+    if (_restUserId != null) {
       try {
-        final uri = _restBaseUrl!.resolve('hours/stop').replace(queryParameters: {'userId': _restUserId});
-        await http.post(uri).timeout(const Duration(seconds: 5));
-      } catch (_) {/* ignore */}
+        await ApiClient.post(
+          '/hours/stop',
+          queryParams: {'userId': _restUserId!},
+        );
+      } catch (e) {
+        print('stopRestSession error: $e');
+      }
     }
-    // Refresh from server
     await _syncRestWithServer(forceNotifyOnce: true);
   }
 
@@ -280,20 +266,21 @@ class NotificationService extends ChangeNotifier {
   }
 
   Future<void> _syncRestWithServer({bool forceNotifyOnce = false}) async {
-    if (_restBaseUrl == null || _restUserId == null) return;
+    if (_restUserId == null) return;
 
     try {
-      final uri = _restBaseUrl!.resolve('hours/status').replace(queryParameters: {'userId': _restUserId});
-      final res = await http.get(uri).timeout(const Duration(seconds: 5));
-      if (res.statusCode != 200) {
-        // ignore: avoid_print
-        print('_syncRestWithServer non-200: ${res.statusCode}');
+      final response = await ApiClient.get(
+        '/hours/status',
+        queryParams: {'userId': _restUserId!},
+      );
+
+      if (!response.success || response.dataAsMap == null) {
+        print('_syncRestWithServer failed: ${response.message}');
         return;
       }
 
-      final Map<String, dynamic> body = json.decode(res.body) as Map<String, dynamic>;
+      final body = response.dataAsMap!;
 
-      // Backend is the source of truth
       final serverContinuous = (body['continuous'] ?? 0) as int? ?? 0;
       final serverTotalToday = (body['totalContinuousToday'] ?? 0) as int? ?? 0;
       final serverActive = _parseBool(body['active']) ?? (serverContinuous > 0);
@@ -304,25 +291,21 @@ class NotificationService extends ChangeNotifier {
         serverStartedAt = DateTime.tryParse(rawStartedAt.toString());
       }
 
-      // Apply server state
       activeSession = serverActive;
       continuousMinutes = serverContinuous;
       todayMinutes = serverTotalToday;
       startedAt = serverStartedAt;
 
-      // ignore: avoid_print
-      print('_syncRestWithServer -> continuous=$continuousMinutes today=$todayMinutes active=$activeSession startedAt=$startedAt');
+      print('_syncRestWithServer -> continuous=$continuousMinutes today=$todayMinutes active=$activeSession');
 
       _checkRestThresholdsAndAlert(forceNotify: forceNotifyOnce);
       _notifySafely();
     } catch (e) {
-      // ignore: avoid_print
-      print('_syncRestWithServer failed (network/error): $e');
+      print('_syncRestWithServer failed: $e');
     }
   }
 
   void _checkRestThresholdsAndAlert({bool forceNotify = false}) {
-    // Alerts are based ONLY on backend minutes.
     if (!_restAlert95Fired && continuousMinutes >= restSoonThreshold) {
       _restAlert95Fired = true;
       showWellnessReminder('Rest soon — you have been driving for $continuousMinutes minutes.');
@@ -334,7 +317,6 @@ class NotificationService extends ChangeNotifier {
       if (forceNotify) _notifySafely();
     }
 
-    // Reset flags if server says session ended
     if (!activeSession) {
       _restAlert95Fired = false;
       _restAlert120Fired = false;
@@ -348,8 +330,6 @@ class NotificationService extends ChangeNotifier {
     super.dispose();
   }
 
-  // ===== Helpers =====
-
   bool? _parseBool(dynamic v) {
     if (v is bool) return v;
     if (v is num) return v != 0;
@@ -361,7 +341,6 @@ class NotificationService extends ChangeNotifier {
     return null;
   }
 
-  /// Safe notifier: never triggers during a build phase.
   void _notifySafely() {
     final phase = SchedulerBinding.instance.schedulerPhase;
     if (phase == SchedulerPhase.idle || phase == SchedulerPhase.postFrameCallbacks) {

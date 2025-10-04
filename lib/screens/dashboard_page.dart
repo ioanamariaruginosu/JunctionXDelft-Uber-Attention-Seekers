@@ -55,7 +55,6 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
       final userId = auth.currentUser?.id ?? 'demo';
 
       context.read<NotificationService>().initRestTimer(
-        baseUrl: Uri.parse('http://localhost:8080'), // adjust if needed
         userId: userId,
         demoMode: false,           // no frontend minute ticking
         demoSecondsPerMinute: 1,   // ignored when demoMode=false
