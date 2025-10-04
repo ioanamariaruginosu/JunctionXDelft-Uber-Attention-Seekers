@@ -5,3 +5,4 @@ build
 *.lock
 android
 ios
+backend/target
