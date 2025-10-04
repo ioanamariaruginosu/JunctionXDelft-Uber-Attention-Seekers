@@ -9,9 +9,12 @@ import 'screens/settings_page.dart';
 import 'screens/profile_page.dart';
 import 'services/auth_service.dart';
 import 'services/mock_data_service.dart';
-import 'services/atlas_ai_service.dart';
+import 'services/maskot_ai_service.dart';
 import 'services/notification_service.dart';
 import 'utils/theme.dart';
+import 'services/rest_timer_service.dart';
+import 'services/notification_service.dart';
+import 'services/auth_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,8 +35,21 @@ class UberCopilotApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => MockDataService()),
-        ChangeNotifierProvider(create: (_) => AtlasAIService()),
+        ChangeNotifierProvider(create: (_) => MaskotAIService()),
         ChangeNotifierProvider(create: (_) => NotificationService()),
+        ChangeNotifierProvider(create: (context) {
+          final auth = context.read<AuthService>();
+          // Adapt this to your actual user model field. If your user id field is `uid` or something else,
+          // replace `id` with the correct property.
+          final userId = auth.currentUser?.id ?? 'demo';
+          return RestTimerService(
+            baseUrl: Uri.parse('http://localhost:8080'),
+            userId: userId,
+            notificationService: context.read<NotificationService>(),
+            demoMode: false, // set true for fast local testing (1s == 1min)
+            demoSecondsPerMinute: 1,
+          );
+        }),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
       child: Consumer<ThemeProvider>(

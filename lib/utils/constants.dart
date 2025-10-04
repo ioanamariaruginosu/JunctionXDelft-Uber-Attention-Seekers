@@ -37,14 +37,14 @@ class Constants {
     'Entertainment Complex',
   ];
 
-  static const List<String> atlasGreetings = [
-    'Hello! I\'m Atlas, your AI co-pilot. Ready to maximize your earnings today?',
-    'Welcome back! Atlas here, let\'s make today profitable!',
-    'Hey there! Atlas at your service. Time to optimize those earnings!',
-    'Good to see you! I\'m Atlas, and I\'ve got some hot spots for you.',
+  static const List<String> maskotGreetings = [
+    'Hello! I\'m Maskot, your AI co-pilot. Ready to maximize your earnings today?',
+    'Welcome back! Maskot here, let\'s make today profitable!',
+    'Hey there! Maskot at your service. Time to optimize those earnings!',
+    'Good to see you! I\'m Maskot, and I\'ve got some hot spots for you.',
   ];
 
-  static const List<String> atlasEncouragements = [
+  static const List<String> maskotEncouragements = [
     'You\'re doing great! Keep it up!',
     'Excellent driving today! Your ratings are stellar.',
     'Nice work on that last trip!',
@@ -114,7 +114,7 @@ class Constants {
     'vibration': true,
     'autoBreaks': true,
     'breakInterval': 3,
-    'atlasPersonality': 'balanced',
+    'maskotPersonality': 'balanced',
     'voiceAlerts': false,
     'nightMode': 'auto',
     'showEarningsGoal': true,
