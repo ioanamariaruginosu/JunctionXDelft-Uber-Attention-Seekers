@@ -1,119 +1,62 @@
 package com.attentionseekers.service;
 
 import com.attentionseekers.model.SessionInfo;
-import org.springframework.stereotype.Service;
+import com.attentionseekers.model.SessionPeriod;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.File;
-import java.io.IOException;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
-@Service
-public class HoursService {
+/** Stateless service that operates on SessionInfo. */
+public class SessionService {
 
-    private java.util.Map<String, SessionInfo> userSessions = new java.util.HashMap<>();
+    private final Clock clock;
 
-    private static final String SESSION_DIR = "sessions";
-    private ObjectMapper objectMapper = new ObjectMapper();
-
-    public void startSession() {
-        if (currentSessionStart == null) {
-            currentSessionStart = LocalDateTime.now();
-        }
+    public SessionService() {
+        this(Clock.systemDefaultZone()); // <-- fix here
     }
 
-    public void stopSession() {
-        if (currentSessionStart != null) {
-            sessions.add(new SessionPeriod(currentSessionStart, LocalDateTime.now()));
-            currentSessionStart = null;
-        }
+    public SessionService(Clock clock) {
+        this.clock = clock;
     }
 
-    public int getContinuousMinutes() {
-        if (currentSessionStart == null) return 0;
-        return (int) java.time.Duration.between(currentSessionStart, LocalDateTime.now()).toMinutes();
+    /** Starts a session if none is active. @return true if started, false if already running. */
+    public boolean startSession(SessionInfo info) {
+        if (info.hasOngoingSession()) return false;
+        info.setCurrentSessionStart(LocalDateTime.now(clock));
+        return true;
     }
 
-    public int getTotalMinutesToday() {
+    /** Stops the active session and stores it. @return true if stopped, false if none running. */
+    public boolean stopSession(SessionInfo info) {
+        if (!info.hasOngoingSession()) return false;
+        LocalDateTime start = info.getCurrentSessionStart();
+        LocalDateTime end   = LocalDateTime.now(clock);
+        info.addSession(new SessionPeriod(start, end));
+        info.clearCurrentSessionStart();
+        return true;
+    }
+
+    /** Minutes since current session start; 0 if none running. */
+    public int getContinuousMinutes(SessionInfo info) {
+        if (!info.hasOngoingSession()) return 0;
+        return (int) Duration.between(info.getCurrentSessionStart(), LocalDateTime.now(clock)).toMinutes();
+    }
+
+    /** Sum of minutes for sessions that started today + ongoing (if started today). */
+    public int getTotalMinutesToday(SessionInfo info) {
         int total = 0;
-        LocalDateTime today = LocalDateTime.now();
-        for (SessionPeriod period : sessions) {
-            if (period.getStart().toLocalDate().equals(today.toLocalDate())) {
-                total += java.time.Duration.between(period.getStart(), period.getEnd()).toMinutes();
+        LocalDate today = LocalDate.now(clock);
+
+        for (SessionPeriod p : info.getSessions()) {
+            if (p.getStart().toLocalDate().isEqual(today)) {
+                total += (int) Duration.between(p.getStart(), p.getEnd()).toMinutes();
             }
         }
-        if (currentSessionStart != null && currentSessionStart.toLocalDate().equals(today.toLocalDate())) {
-            total += getContinuousMinutes();
+        if (info.hasOngoingSession() && info.getCurrentSessionStart().toLocalDate().isEqual(today)) {
+            total += getContinuousMinutes(info);
         }
         return total;
-    }
-
-    // Inner class to represent a session period
-    public static class SessionPeriod {
-        private LocalDateTime start;
-        private LocalDateTime end;
-
-        public SessionPeriod(LocalDateTime start, LocalDateTime end) {
-            this.start = start;
-            this.end = end;
-        }
-
-        public LocalDateTime getStart() { return start; }
-        public LocalDateTime getEnd() { return end; }
-    }
-
-    private void saveSessionInfo(String userId) {
-        File dir = new File(SESSION_DIR);
-        if (!dir.exists()) dir.mkdirs();
-        File file = new File(dir, userId + ".json");
-        try {
-            objectMapper.writeValue(file, getSessionInfo(userId));
-        } catch (IOException e) {
-            // Handle error (log, etc.)
-        }
-    }
-
-    private SessionInfo loadSessionInfo(String userId) {
-        File file = new File(SESSION_DIR, userId + ".json");
-        if (file.exists()) {
-            try {
-                return objectMapper.readValue(file, SessionInfo.class);
-            } catch (IOException e) {
-                // Handle error (log, etc.)
-            }
-        }
-        return new SessionInfo();
-    }
-
-    private SessionInfo getSessionInfo(String userId) {
-        if (!userSessions.containsKey(userId)) {
-            userSessions.put(userId, loadSessionInfo(userId));
-        }
-        return userSessions.get(userId);
-    }
-
-    public void startSession(String userId) {
-        getSessionInfo(userId).startSession();
-    }
-
-    public void stopSession(String userId) {
-        getSessionInfo(userId).stopSession();
-    }
-
-    public int getContinuousMinutes(String userId) {
-        return getSessionInfo(userId).getContinuousMinutes();
-    }
-
-    public int getTotalMinutesToday(String userId) {
-        return getSessionInfo(userId).getTotalMinutesToday();
-    }
-
-    public int getDrivingMinutes(String userId) {
-        // Implement driving minutes logic per user if needed
-        return 0;
-    }
-
-    public int getTotalDrivingMinutesToday(String userId) {
-        // Implement total driving minutes today logic per user if needed
-        return 0;
     }
 }

@@ -25,7 +25,7 @@ public class HoursService {
 
     // Prefer constructor injection in Spring
     public HoursService(SessionService sessionService, ObjectMapper objectMapper) {
-        this.sessionService = sessionService != null ? sessionService : new DefaultSessionService();
+        this.sessionService = sessionService != null ? sessionService : new SessionService();
         // Ensure JavaTime (LocalDateTime) is supported even if a plain ObjectMapper is injected
         this.objectMapper = (objectMapper != null ? objectMapper.copy() : new ObjectMapper())
                 .registerModule(new JavaTimeModule())
