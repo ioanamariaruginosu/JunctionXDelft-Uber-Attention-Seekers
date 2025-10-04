@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:latlong2/latlong.dart' hide Path;
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 import 'dart:math' as math;
 
 class DemandZone {
@@ -20,6 +23,39 @@ class DemandZone {
   });
 }
 
+class RestLocation {
+  final String id;
+  final String name;
+  final double latitude;
+  final double longitude;
+  final String? amenity;
+
+  RestLocation({
+    required this.id,
+    required this.name,
+    required this.latitude,
+    required this.longitude,
+    this.amenity,
+  });
+
+  factory RestLocation.fromJson(Map<String, dynamic> json) {
+    try {
+      // Simple format with latitude/longitude directly in the object
+      return RestLocation(
+        id: json['id'] as String? ?? 'unknown',
+        name: json['name'] as String? ?? 'Parking Location',
+        latitude: (json['latitude'] as num).toDouble(),
+        longitude: (json['longitude'] as num).toDouble(),
+        amenity: json['amenity'] as String?,
+      );
+    } catch (e) {
+      print('⚠️ Error parsing location: $e');
+      print('JSON: $json');
+      rethrow;
+    }
+  }
+}
+
 class RealMapWidget extends StatefulWidget {
   const RealMapWidget({super.key});
 
@@ -33,7 +69,16 @@ class _RealMapWidgetState extends State<RealMapWidget> {
   bool _isLoadingLocation = true;
   bool _isDark = false;
   List<DemandZone> _demandZones = [];
+  List<RestLocation> _restLocations = [];
   Timer? _zoneTimer;
+
+  // Update based on your platform
+  // For Android emulator: use 10.0.2.2
+  // For iOS simulator: use localhost
+  // For physical device: use your computer's IP address
+  static const String baseUrl = 'http://localhost:8080'; // Android emulator
+  // static const String baseUrl = 'http://localhost:8080'; // iOS simulator
+  // static const String baseUrl = 'http://192.168.1.x:8080'; // Physical device
 
   @override
   void initState() {
@@ -46,6 +91,45 @@ class _RealMapWidgetState extends State<RealMapWidget> {
   void dispose() {
     _zoneTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _fetchRestLocations() async {
+    try {
+      final url = Uri.parse(
+          '$baseUrl/api/locations/nearby/${_currentLocation.latitude}/${_currentLocation.longitude}/10');
+
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+
+        // Handle both array and GeoJSON formats
+        List<dynamic> features;
+        if (jsonData is Map && jsonData.containsKey('features')) {
+          features = jsonData['features'] as List<dynamic>;
+        } else if (jsonData is List) {
+          features = jsonData;
+        } else {
+          return;
+        }
+
+        setState(() {
+          _restLocations = features
+              .map((json) {
+            try {
+              return RestLocation.fromJson(json);
+            } catch (e) {
+              return null;
+            }
+          })
+              .whereType<RestLocation>() // Filter out nulls
+              .toList();
+        });
+      }
+    } catch (e, stackTrace) {
+      print('💥 Error fetching rest locations: $e');
+      print('Stack trace: $stackTrace');
+    }
   }
 
   void _startRandomZoneGeneration() {
@@ -117,6 +201,7 @@ class _RealMapWidgetState extends State<RealMapWidget> {
       if (!serviceEnabled) {
         setState(() => _isLoadingLocation = false);
         _generateDemandZones();
+        _fetchRestLocations();
         return;
       }
 
@@ -126,6 +211,7 @@ class _RealMapWidgetState extends State<RealMapWidget> {
         if (permission == LocationPermission.denied) {
           setState(() => _isLoadingLocation = false);
           _generateDemandZones();
+          _fetchRestLocations();
           return;
         }
       }
@@ -133,6 +219,7 @@ class _RealMapWidgetState extends State<RealMapWidget> {
       if (permission == LocationPermission.deniedForever) {
         setState(() => _isLoadingLocation = false);
         _generateDemandZones();
+        _fetchRestLocations();
         return;
       }
 
@@ -147,10 +234,12 @@ class _RealMapWidgetState extends State<RealMapWidget> {
 
       _mapController.move(_currentLocation, 13.0);
       _generateDemandZones();
+      _fetchRestLocations();
     } catch (e) {
       print('Error getting location: $e');
       setState(() => _isLoadingLocation = false);
       _generateDemandZones();
+      _fetchRestLocations();
     }
   }
 
@@ -238,6 +327,66 @@ class _RealMapWidgetState extends State<RealMapWidget> {
                 }).toList(),
               ),
 
+              // Rest location markers - with better visibility
+              MarkerLayer(
+                markers: _restLocations.map((location) {
+                  print('Creating marker at: ${location.latitude}, ${location.longitude} - ${location.name}');
+                  return Marker(
+                    point: LatLng(location.latitude, location.longitude),
+                    width: 80,
+                    height: 80,
+                    alignment: Alignment.topCenter,
+                    child: GestureDetector(
+                      onTap: () {
+                        print('Tapped rest location: ${location.name}');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(location.name),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.deepPurple,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 3,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.5),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: const Text(
+                              'Zzz',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          // Small triangle pointer
+                          CustomPaint(
+                            size: const Size(16, 8),
+                            painter: TrianglePainter(Colors.deepPurple),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+
               // Current location marker
               if (!_isLoadingLocation)
                 MarkerLayer(
@@ -301,6 +450,12 @@ class _RealMapWidgetState extends State<RealMapWidget> {
                 ),
                 const SizedBox(height: 8),
 
+                FloatingActionButton(
+                  mini: true,
+                  heroTag: 'refresh',
+                  onPressed: _fetchRestLocations,
+                  child: const Icon(Icons.refresh),
+                ),
                 const SizedBox(height: 8),
 
                 FloatingActionButton(
@@ -334,4 +489,29 @@ class _RealMapWidgetState extends State<RealMapWidget> {
       ),
     );
   }
+}
+
+// Custom painter for the triangle pointer below the marker
+class TrianglePainter extends CustomPainter {
+  final Color color;
+
+  TrianglePainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    path.moveTo(size.width / 2, size.height); // Bottom center (point)
+    path.lineTo(0, 0); // Top left
+    path.lineTo(size.width, 0); // Top right
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
