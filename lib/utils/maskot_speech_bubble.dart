@@ -99,7 +99,7 @@ class _MaskotSpeechBubbleState extends State<MaskotSpeechBubble>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Maskot AI',
+                  'Maskot',
                   style: TextStyle(
                     color: const Color(0xFF9C27B0),
                     fontWeight: FontWeight.bold,
@@ -155,7 +155,7 @@ class _MaskotSpeechBubbleState extends State<MaskotSpeechBubble>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Maskot AI',
+                  'Maskot',
                   style: TextStyle(
                     color: Colors.red,
                     fontWeight: FontWeight.bold,
@@ -241,7 +241,7 @@ class _MaskotSpeechBubbleState extends State<MaskotSpeechBubble>
                         Row(
                           children: [
                             Text(
-                              'Maskot AI',
+                              'Maskot',
                               style: TextStyle(
                                 color: borderColor,
                                 fontWeight: FontWeight.bold,
@@ -293,21 +293,23 @@ class _MaskotSpeechBubbleState extends State<MaskotSpeechBubble>
   }
 
   Widget _buildMaskotAvatar({bool isError = false, Color? borderColor}) {
+    // Determine which mascot image to show based on recommendation
+    String mascotImage;
+    if (isError) {
+      mascotImage = 'assets/images/Mascot_tired.png';
+    } else if (borderColor == Colors.green) {
+      mascotImage = 'assets/images/Mascot_normal.png';
+    } else if (borderColor == Colors.red) {
+      mascotImage = 'assets/images/Mascot_angry.png';
+    } else {
+      mascotImage = 'assets/images/Mascot_normal.png';
+    }
+
     return Container(
       width: 40,
       height: 40,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: isError
-            ? LinearGradient(
-          colors: [Colors.red.shade400, Colors.red.shade600],
-        )
-            : LinearGradient(
-          colors: [
-            borderColor ?? const Color(0xFF9C27B0),
-            (borderColor ?? const Color(0xFF9C27B0)).withOpacity(0.7),
-          ],
-        ),
         boxShadow: [
           BoxShadow(
             color: (borderColor ?? const Color(0xFF9C27B0)).withOpacity(0.3),
@@ -316,10 +318,11 @@ class _MaskotSpeechBubbleState extends State<MaskotSpeechBubble>
           ),
         ],
       ),
-      child: const Icon(
-        Icons.assistant,
-        color: Colors.white,
-        size: 22,
+      child: ClipOval(
+        child: Image.asset(
+          mascotImage,
+          fit: BoxFit.cover,
+        ),
       ),
     );
   }

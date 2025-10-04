@@ -92,57 +92,83 @@ public class TripAnalysisService {
     private double calculateFinalScore(TripAnalysisRequest request, HistoricalAnalysis analysis) {
         double score = 0.0;
 
-        // 1. Earnings efficiency (30% weight)
+        // 1. Earnings efficiency (30% weight) - MUCH STRICTER
         double requestEarningsPerMin = request.getTotalEarnings() / request.getEstimatedDuration();
         if (analysis.avgEarningsPerMinute > 0) {
             double efficiencyRatio = requestEarningsPerMin / analysis.avgEarningsPerMinute;
-            score += Math.min(efficiencyRatio * 3.0, 3.0);
+            // Need to be 50% above average to get full points
+            if (efficiencyRatio >= 1.5) {
+                score += 3.0;
+            } else if (efficiencyRatio >= 1.2) {
+                score += 2.0;
+            } else if (efficiencyRatio >= 1.0) {
+                score += 1.2;
+            } else if (efficiencyRatio >= 0.8) {
+                score += 0.6;
+            }
         } else {
-            score += requestEarningsPerMin > 0.5 ? 2.0 : 1.0;
+            score += requestEarningsPerMin > 0.5 ? 1.5 : 0.5;
         }
 
-        // 2. Surge comparison (25% weight)
+        // 2. Surge comparison (25% weight) - STRICTER
         double currentSurge = request.getSurgeMultiplier() != null ? request.getSurgeMultiplier() : 1.0;
-        if (currentSurge >= analysis.nextHourSurge && currentSurge >= analysis.twoHoursLaterSurge) {
-            score += 2.5; // Peak surge now, take it
-        } else if (currentSurge < analysis.nextHourSurge * 0.8) {
-            score += 0.5; // Better to wait
-        } else {
-            score += 1.5; // Decent surge
+        if (currentSurge >= 2.5) {
+            score += 2.5; // Only very high surge gets full points
+        } else if (currentSurge >= 1.8) {
+            score += 1.8;
+        } else if (currentSurge >= 1.3) {
+            score += 1.0;
+        } else if (currentSurge > 1.0) {
+            score += 0.3;
         }
 
-        // 3. Distance efficiency (20% weight)
+        // 3. Distance efficiency (20% weight) - STRICTER
         double earningsPerMile = request.getTotalEarnings() / request.getDistance();
-        if (earningsPerMile > 2.5) {
+        if (earningsPerMile > 3.5) {
             score += 2.0;
-        } else if (earningsPerMile > 1.5) {
+        } else if (earningsPerMile > 2.5) {
             score += 1.5;
-        } else if (earningsPerMile > 1.0) {
+        } else if (earningsPerMile > 1.8) {
             score += 1.0;
+        } else if (earningsPerMile > 1.2) {
+            score += 0.5;
+        } else {
+            score += 0.2;
+        }
+
+        // 4. Comparison to top performers (15% weight) - STRICTER
+        if (analysis.topPerformerEarningsPerMin > 0) {
+            double vsTopPerformers = requestEarningsPerMin / analysis.topPerformerEarningsPerMin;
+            if (vsTopPerformers >= 0.9) {
+                score += 1.5; // Close to top performers
+            } else if (vsTopPerformers >= 0.7) {
+                score += 1.0;
+            } else if (vsTopPerformers >= 0.5) {
+                score += 0.5;
+            } else {
+                score += 0.2;
+            }
         } else {
             score += 0.5;
         }
 
-        // 4. Comparison to top performers (15% weight)
-        if (analysis.topPerformerEarningsPerMin > 0) {
-            double vsTopPerformers = requestEarningsPerMin / analysis.topPerformerEarningsPerMin;
-            score += Math.min(vsTopPerformers * 1.5, 1.5);
-        } else {
-            score += 0.75;
-        }
-
-        // 5. Time investment (10% weight)
-        if (request.getEstimatedDuration() <= 15) {
-            score += 1.0; // Quick trips are good
-        } else if (request.getEstimatedDuration() <= 30) {
+        // 5. Time investment (10% weight) - STRICTER with penalties
+        if (request.getEstimatedDuration() <= 10) {
+            score += 1.0;
+        } else if (request.getEstimatedDuration() <= 20) {
             score += 0.7;
-        } else if (request.getEstimatedDuration() <= 45) {
+        } else if (request.getEstimatedDuration() <= 35) {
             score += 0.4;
+        } else if (request.getEstimatedDuration() <= 50) {
+            score += 0.1;
         } else {
-            score += 0.2; // Long trips tie you up
+            score -= 0.3; // Penalty for very long trips
         }
 
-        return Math.min(score, 10.0);
+        // Add slight randomness for variety
+        score += (Math.random() - 0.5) * 0.8;
+
+        return Math.max(0.0, Math.min(score, 10.0));
     }
 
     private String getRecommendation(double score) {

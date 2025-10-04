@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/services.dart';
 import 'package:csv/csv.dart';
@@ -132,36 +131,55 @@ class HistoricalTripGenerator {
   }) {
     double score = 0.0;
 
-    if (earningsPerMinute > 2.0) {
-      score += 4.0;
-    } else if (earningsPerMinute > 1.5) {
-      score += 3.0;
-    } else if (earningsPerMinute > 1.0) {
-      score += 2.0;
-    } else if (earningsPerMinute > 0.75) {
-      score += 1.0;
+    // Earnings per minute (0-3.5 points) - made stricter
+    if (earningsPerMinute > 2.5) {
+      score += 3.5;
+    } else if (earningsPerMinute > 1.8) {
+      score += 2.5;
+    } else if (earningsPerMinute > 1.3) {
+      score += 1.8;
+    } else if (earningsPerMinute > 0.9) {
+      score += 1.2;
+    } else if (earningsPerMinute > 0.6) {
+      score += 0.6;
     }
 
-    if (surge >= 2.0) {
-      score += 3.0;
-    } else if (surge >= 1.5) {
-      score += 2.0;
+    // Surge multiplier (0-2.5 points) - reduced from 3.0
+    if (surge >= 2.5) {
+      score += 2.5;
+    } else if (surge >= 1.8) {
+      score += 1.8;
+    } else if (surge >= 1.3) {
+      score += 1.2;
     } else if (surge > 1.0) {
-      score += 1.0;
-    }
-
-    final earningsPerMile = (earningsPerMinute * duration) / distance;
-    if (earningsPerMile > 2.5) {
-      score += 2.0;
-    } else if (earningsPerMile > 1.5) {
-      score += 1.0;
-    }
-
-    if (duration <= 15) {
-      score += 1.0;
-    } else if (duration <= 30) {
       score += 0.5;
     }
+
+    // Distance efficiency (0-2.0 points) - stricter thresholds
+    final earningsPerMile = (earningsPerMinute * duration) / distance;
+    if (earningsPerMile > 3.0) {
+      score += 2.0;
+    } else if (earningsPerMile > 2.0) {
+      score += 1.5;
+    } else if (earningsPerMile > 1.3) {
+      score += 0.8;
+    } else if (earningsPerMile > 0.8) {
+      score += 0.3;
+    }
+
+    // Time investment (0-1.5 points)
+    if (duration <= 12) {
+      score += 1.5;
+    } else if (duration <= 20) {
+      score += 1.0;
+    } else if (duration <= 35) {
+      score += 0.5;
+    } else if (duration > 50) {
+      score -= 0.5; // Penalize very long trips
+    }
+
+    // Add some randomness for variety (-0.5 to +0.5)
+    score += (_random.nextDouble() - 0.5);
 
     return score.clamp(0.0, 10.0);
   }
