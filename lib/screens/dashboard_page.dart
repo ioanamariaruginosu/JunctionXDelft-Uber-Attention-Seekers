@@ -7,7 +7,7 @@ import '../services/mock_data_service.dart';
 import '../services/atlas_ai_service.dart';
 import '../services/notification_service.dart';
 import '../models/trip_model.dart';
-import '../widgets/atlas_widget.dart';
+import '../widgets/mascot_widget.dart';
 import '../widgets/popup_system.dart';
 import '../utils/theme.dart';
 
@@ -85,7 +85,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
           _buildTopBar(context, authService, mockData),
           if (mockData.currentTripRequest != null) _buildTripRequestCard(context, mockData, atlasService),
           if (mockData.activeTrip != null) _buildActiveTripCard(context, mockData),
-          const AtlasWidget(),
+          const MascotWidget(), // change icon
           const PopupSystem(),
         ],
       ),
