@@ -5,7 +5,14 @@ import '../models/notification_model.dart';
 import '../utils/theme.dart';
 
 class PopupSystem extends StatelessWidget {
-  const PopupSystem({Key? key}) : super(key: key);
+  final double mascotSize;
+  final double mascotBottom;
+
+  const PopupSystem({
+    Key? key,
+    required this.mascotSize,
+    required this.mascotBottom,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -18,19 +25,21 @@ class PopupSystem extends StatelessWidget {
         return AnimatedPositioned(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutBack,
-          top: MediaQuery.of(context).padding.top + 60 + (index * 120.0),
+          bottom: mascotBottom + mascotSize + (index * 120.0), // always above mascot
           left: 16,
           right: 16,
           child: NotificationPopup(
             notification: notification,
             onDismiss: () => notificationService.dismissPopup(notification.id),
-            onAction: (actionId) => notificationService.handleAction(notification.id, actionId),
+            onAction: (actionId) =>
+                notificationService.handleAction(notification.id, actionId),
           ),
         );
       }).toList(),
     );
   }
 }
+
 
 class NotificationPopup extends StatefulWidget {
   final NotificationModel notification;

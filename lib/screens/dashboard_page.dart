@@ -77,6 +77,8 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
     final atlasService = context.watch<AtlasAIService>();
     final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
+    double mascotSize = MediaQuery.of(context).size.width * 0.15;
+    double mascotBottom = 100;
 
     return Scaffold(
       key: _scaffoldKey,
@@ -87,8 +89,8 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
           _buildTopBar(context, authService, mockData),
           if (mockData.currentTripRequest != null) _buildTripRequestCard(context, mockData, atlasService),
           if (mockData.activeTrip != null) _buildActiveTripCard(context, mockData),
-          const MascotWidget(), // change icon
-          const PopupSystem(),
+          const MascotWidget(),
+          PopupSystem(mascotSize: mascotSize, mascotBottom: mascotBottom),
 
           // Add the slide to go online widget
           SlideToGoOnline(
