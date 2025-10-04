@@ -12,6 +12,10 @@ import '../widgets/map_widget.dart';
 import '../widgets/popup_system.dart';
 import '../utils/theme.dart';
 import '../widgets/slide_to_go_online.dart';
+import '../widgets/weather_widget.dart';
+import 'package:uber_copilot/widgets/map_widget.dart' as map_widget;
+import 'package:uber_copilot/widgets/weather_widget.dart' as weather_widget;
+import '../widgets/map_widget.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({Key? key}) : super(key: key);
@@ -26,6 +30,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
   late AnimationController _counterController;
   late Animation<double> _pulseAnimation;
   late Animation<double> _counterAnimation;
+  
 
   @override
   void initState() {
@@ -92,7 +97,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
           const MascotWidget(),
           PopupSystem(mascotSize: mascotSize, mascotBottom: mascotBottom),
 
-          // Add the slide to go online widget
+          // Slide to go online widget
           SlideToGoOnline(
             isOnline: mockData.isOnline,
             onChanged: (value) {
@@ -103,13 +108,18 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
               }
             },
           ),
+          // Positioned(
+          //   top: 50,
+          //   left: 20,
+          //   child: WeatherWidget()
+          // ),
         ],
       ),
     );
   }
 
   Widget _buildMapInterface() {
-    return const RealMapWidget();
+    return RealMapWidget();
   }
 
   Widget _buildTopBar(BuildContext context, AuthService authService, MockDataService mockData) {
@@ -141,56 +151,60 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
             // Menu button on the left
             Positioned(
               left: 0,
-              child: Positioned(
-                left: 0,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.menu),
-                    color: theme.colorScheme.primary,
-                    onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                  ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.menu),
+                  color: theme.colorScheme.primary,
+                  onPressed: () => _scaffoldKey.currentState?.openDrawer(),
                 ),
               ),
             ),
 
-            // Centered earnings
+            // Centered earnings and weather
             Center(
-              child: AnimatedBuilder(
-                animation: _counterAnimation,
-                builder: (context, child) {
-                  final earnings = mockData.todayEarnings?.totalEarnings ?? 0;
-                  final displayEarnings = earnings * _counterAnimation.value;
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.attach_money, color: AppColors.success),
-                        Text(
-                          displayEarnings.toStringAsFixed(2),
-                          style: AppTextStyles.headline4.copyWith(
-                            color: AppColors.success,
-                          ),
+              child: Column(
+                children: [
+                  // Earnings
+                  AnimatedBuilder(
+                    animation: _counterAnimation,
+                    builder: (context, child) {
+                      final earnings = mockData.todayEarnings?.totalEarnings ?? 0;
+                      final displayEarnings = earnings * _counterAnimation.value;
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                      ],
-                    ),
-                  );
-                },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.attach_money, color: AppColors.success),
+                            Text(
+                              displayEarnings.toStringAsFixed(2),
+                              style: AppTextStyles.headline4.copyWith(
+                                color: AppColors.success,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  WeatherWidget(),
+                ],
               ),
             ),
           ],
@@ -198,7 +212,6 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
       ),
     );
   }
-
 
   Widget _buildTripRequestCard(BuildContext context, MockDataService mockData, AtlasAIService atlasService) {
     final trip = mockData.currentTripRequest!;
@@ -213,128 +226,128 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
       bottom: mockData.isOnline ? 100 : 160,
       child: SingleChildScrollView(
         child: Card(
-            elevation: 8,
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'New Trip Request',
-                        style: AppTextStyles.headline4,
-                      ),
-                      TweenAnimationBuilder<int>(
-                        tween: IntTween(begin: 15, end: 0),
-                        duration: const Duration(seconds: 15),
-                        builder: (context, value, child) {
-                          return Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: value <= 5 ? AppColors.error : AppColors.warning,
-                            ),
-                            child: Text(
-                              '$value',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const Icon(Icons.trip_origin, color: AppColors.success),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          trip.pickupLocation,
-                          style: AppTextStyles.bodyMedium,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on, color: AppColors.error),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          trip.dropoffLocation,
-                          style: AppTextStyles.bodyMedium,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildTripDetail(Icons.attach_money, '\\\$${trip.totalEarnings.toStringAsFixed(2)}'),
-                      _buildTripDetail(Icons.straighten, '${trip.distance.toStringAsFixed(1)} mi'),
-                      _buildTripDetail(Icons.schedule, '${trip.estimatedDuration.inMinutes} min'),
-                      if (trip.surge > 1.0) _buildTripDetail(Icons.bolt, '${trip.surge.toStringAsFixed(1)}x'),
-                    ],
-                  ),
-                  if (atlasService.currentSuggestion != null) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.atlasGlow.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.atlasGlow),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.assistant, color: AppColors.atlasGlow),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              atlasService.currentSuggestion!.split('\n').first,
-                              style: TextStyle(color: theme.colorScheme.onSurface),
+          elevation: 8,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'New Trip Request',
+                      style: AppTextStyles.headline4,
+                    ),
+                    TweenAnimationBuilder<int>(
+                      tween: IntTween(begin: 15, end: 0),
+                      duration: const Duration(seconds: 15),
+                      builder: (context, value, child) {
+                        return Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: value <= 5 ? AppColors.error : AppColors.warning,
+                          ),
+                          child: Text(
+                            '$value',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.trip_origin, color: AppColors.success),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        trip.pickupLocation,
+                        style: AppTextStyles.bodyMedium,
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.location_on, color: AppColors.error),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        trip.dropoffLocation,
+                        style: AppTextStyles.bodyMedium,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildTripDetail(Icons.attach_money, '\\\$${trip.totalEarnings.toStringAsFixed(2)}'),
+                    _buildTripDetail(Icons.straighten, '${trip.distance.toStringAsFixed(1)} mi'),
+                    _buildTripDetail(Icons.schedule, '${trip.estimatedDuration.inMinutes} min'),
+                    if (trip.surge > 1.0) _buildTripDetail(Icons.bolt, '${trip.surge.toStringAsFixed(1)}x'),
+                  ],
+                ),
+                if (atlasService.currentSuggestion != null) ...[
                   const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => mockData.declineTrip(),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.error,
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.atlasGlow.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.atlasGlow),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.assistant, color: AppColors.atlasGlow),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            atlasService.currentSuggestion!.split('\n').first,
+                            style: TextStyle(color: theme.colorScheme.onSurface),
                           ),
-                          child: const Text('Decline'),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => mockData.acceptTrip(),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.success,
-                          ),
-                          child: const Text('Accept'),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
-              ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => mockData.declineTrip(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error,
+                        ),
+                        child: const Text('Decline'),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => mockData.acceptTrip(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.success,
+                        ),
+                        child: const Text('Accept'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
+        ),
       ),
     );
   }
