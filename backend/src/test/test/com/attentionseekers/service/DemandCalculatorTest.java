@@ -18,7 +18,7 @@ public class DemandCalculatorTest {
         Map<String, Double> w     = Map.of("A", 1.0);
         Map<String, Double> c     = Map.of("A", 0.0);
 
-        Map<String, DemandCalculator.ZoneDemand> out = DemandCalculator.calculateDemand(rides, eats, surge, heat, inc, w, c);
+    Map<String, DemandCalculator.ZoneDemand> out = DemandCalculator.calculateDemand(rides, eats, surge, heat, inc, w, c, DemandCalculator.UserType.RIDER);
         assertTrue(out.containsKey("A"));
         DemandCalculator.ZoneDemand zd = out.get("A");
         assertEquals("high", zd.getRidesLevel());
@@ -36,7 +36,7 @@ public class DemandCalculatorTest {
         Map<String, Double> w     = Map.of("B", 1.0);
         Map<String, Double> c     = Map.of("B", 0.0);
 
-        Map<String, DemandCalculator.ZoneDemand> out = DemandCalculator.calculateDemand(rides, eats, surge, heat, inc, w, c);
+    Map<String, DemandCalculator.ZoneDemand> out = DemandCalculator.calculateDemand(rides, eats, surge, heat, inc, w, c, DemandCalculator.UserType.RIDER);
         assertTrue(out.containsKey("B"));
         DemandCalculator.ZoneDemand zd = out.get("B");
         assertEquals("low", zd.getRidesLevel());
@@ -47,7 +47,7 @@ public class DemandCalculatorTest {
     @Test
     public void testMissingValuesHandled() {
         // All maps null should not throw and produce empty map
-        Map<String, DemandCalculator.ZoneDemand> out = DemandCalculator.calculateDemand(null, null, null, null, null, null, null);
+    Map<String, DemandCalculator.ZoneDemand> out = DemandCalculator.calculateDemand(null, null, null, null, null, null, null, DemandCalculator.UserType.RIDER);
         assertNotNull(out);
         assertTrue(out.isEmpty());
     }
