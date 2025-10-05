@@ -440,6 +440,8 @@ class _RealMapWidgetState extends State<RealMapWidget> {
                 FloatingActionButton(
                   mini: true,
                   heroTag: 'theme',
+                  backgroundColor: _isDark ? Colors.white : Colors.black,
+                  foregroundColor: _isDark ? Colors.black : Colors.white,
                   onPressed: () {
                     setState(() => _isDark = !_isDark);
                   },
@@ -450,6 +452,8 @@ class _RealMapWidgetState extends State<RealMapWidget> {
                 FloatingActionButton(
                   mini: true,
                   heroTag: 'location',
+                  backgroundColor: _isDark ? Colors.white : Colors.black,
+                  foregroundColor: _isDark ? Colors.black : Colors.white,
                   onPressed: () {
                     _mapController.move(_currentLocation, 13.0);
                   },
@@ -460,6 +464,8 @@ class _RealMapWidgetState extends State<RealMapWidget> {
                 FloatingActionButton(
                   mini: true,
                   heroTag: 'refresh',
+                  backgroundColor: _isDark ? Colors.white : Colors.black,
+                  foregroundColor: _isDark ? Colors.black : Colors.white,
                   onPressed: _fetchRestLocations,
                   child: const Icon(Icons.refresh),
                 ),
@@ -468,6 +474,8 @@ class _RealMapWidgetState extends State<RealMapWidget> {
                 FloatingActionButton(
                   mini: true,
                   heroTag: 'zoom_in',
+                  backgroundColor: _isDark ? Colors.white : Colors.black,
+                  foregroundColor: _isDark ? Colors.black : Colors.white,
                   onPressed: () {
                     _mapController.move(
                       _mapController.camera.center,
@@ -481,6 +489,8 @@ class _RealMapWidgetState extends State<RealMapWidget> {
                 FloatingActionButton(
                   mini: true,
                   heroTag: 'zoom_out',
+                  backgroundColor: _isDark ? Colors.white : Colors.black,
+                  foregroundColor: _isDark ? Colors.black : Colors.white,
                   onPressed: () {
                     _mapController.move(
                       _mapController.camera.center,

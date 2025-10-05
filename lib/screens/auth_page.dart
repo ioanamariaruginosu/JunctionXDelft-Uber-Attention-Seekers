@@ -67,8 +67,12 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final authService = context.watch<AuthService>();
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = isDark ? AppColors.primaryDark : AppColors.primary;
+    final backgroundColor = isDark ? AppColors.darkBackground : AppColors.lightBackground;
 
     return Scaffold(
+      backgroundColor: backgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -80,13 +84,13 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
                 Icon(
                   Icons.assistant_navigation,
                   size: 80,
-                  color: theme.colorScheme.primary,
+                  color: primaryColor,
                 ),
                 const SizedBox(height: 24),
                 Text(
                   Constants.appName,
                   style: AppTextStyles.headline1.copyWith(
-                    color: theme.colorScheme.primary,
+                    color: primaryColor,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -94,58 +98,38 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
                 Text(
                   Constants.tagline,
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: isDark ? Colors.grey[400] : Colors.grey[600],
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
                 Container(
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                    color: isDark ? AppColors.lightSurface : AppColors.darkSurface,
                     borderRadius: BorderRadius.circular(AppConstants.borderRadius),
                   ),
+                  padding: const EdgeInsets.all(4),
                   child: TabBar(
                     controller: _tabController,
-                    indicatorColor: theme.colorScheme.primary,
-                    labelColor: theme.colorScheme.primary,
-                    unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    indicatorPadding: const EdgeInsets.all(4),
+                    dividerColor: Colors.transparent,
                     indicator: BoxDecoration(
-                      color: theme.colorScheme.primary,
                       borderRadius: BorderRadius.circular(AppConstants.borderRadius - 4),
                     ),
+                    labelColor: isDark ? AppColors.primary : AppColors.primaryDark,
+                    unselectedLabelColor: isDark ? Colors.grey[400] : Colors.grey[600],
                     labelStyle: AppTextStyles.button,
-                    tabs: [
-                      Tab(
-                        child: Text(
-                          'Login',
-                          style: TextStyle(
-                            color: _tabController.index == 0
-                                ? theme.colorScheme.onPrimary
-                                : theme.colorScheme.primary,
-                          ),
-                        ),
-                      ),
-                      Tab(
-                        child: Text(
-                          'Register',
-                          style: TextStyle(
-                            color: _tabController.index == 1
-                                ? theme.colorScheme.onPrimary
-                                : theme.colorScheme.primary,
-                          ),
-                        ),
-                      ),
+                    tabs: const [
+                      Tab(text: 'Login'),
+                      Tab(text: 'Register'),
                     ],
                     onTap: (_) => setState(() {}),
                   ),
                 ),
                 const SizedBox(height: 32),
                 if (_tabController.index == 0)
-                  _buildLoginForm(context, authService)
+                  _buildLoginForm(context, authService, isDark, primaryColor)
                 else
-                  _buildRegisterForm(context, authService),
+                  _buildRegisterForm(context, authService, isDark, primaryColor),
               ],
             ),
           ),
@@ -154,7 +138,7 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildLoginForm(BuildContext context, AuthService authService) {
+  Widget _buildLoginForm(BuildContext context, AuthService authService, bool isDark, Color primaryColor) {
     return Form(
       key: _loginFormKey,
       child: Column(
@@ -163,9 +147,45 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
           TextFormField(
             controller: _loginEmailController,
             keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black,
+              fontSize: 16,
+            ),
+            decoration: InputDecoration(
               labelText: 'Email or Phone',
-              prefixIcon: Icon(Icons.person_outline),
+              labelStyle: TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[600]),
+              floatingLabelStyle: TextStyle(color: primaryColor),
+              prefixIcon: Icon(
+                Icons.person_outline,
+                color: isDark ? Colors.grey[500] : Colors.grey[600],
+                size: 22,
+              ),
+              filled: false,
+              contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(
+                  color: isDark ? Colors.grey[800]! : Colors.grey[300]!,
+                  width: 1,
+                ),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(
+                  color: primaryColor,
+                  width: 2,
+                ),
+              ),
+              errorBorder: const UnderlineInputBorder(
+                borderSide: BorderSide(
+                  color: AppColors.error,
+                  width: 1,
+                ),
+              ),
+              focusedErrorBorder: const UnderlineInputBorder(
+                borderSide: BorderSide(
+                  color: AppColors.error,
+                  width: 2,
+                ),
+              ),
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -178,12 +198,51 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
           TextFormField(
             controller: _loginPasswordController,
             obscureText: !_showLoginPassword,
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black,
+              fontSize: 16,
+            ),
             decoration: InputDecoration(
               labelText: 'Password',
-              prefixIcon: const Icon(Icons.lock_outline),
+              labelStyle: TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[600]),
+              floatingLabelStyle: TextStyle(color: primaryColor),
+              prefixIcon: Icon(
+                Icons.lock_outline,
+                color: isDark ? Colors.grey[500] : Colors.grey[600],
+                size: 22,
+              ),
               suffixIcon: IconButton(
-                icon: Icon(_showLoginPassword ? Icons.visibility_off : Icons.visibility),
+                icon: Icon(
+                  _showLoginPassword ? Icons.visibility_off : Icons.visibility,
+                  color: isDark ? Colors.grey[500] : Colors.grey[600],
+                ),
                 onPressed: () => setState(() => _showLoginPassword = !_showLoginPassword),
+              ),
+              filled: false,
+              contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(
+                  color: isDark ? Colors.grey[800]! : Colors.grey[300]!,
+                  width: 1,
+                ),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(
+                  color: primaryColor,
+                  width: 2,
+                ),
+              ),
+              errorBorder: const UnderlineInputBorder(
+                borderSide: BorderSide(
+                  color: AppColors.error,
+                  width: 1,
+                ),
+              ),
+              focusedErrorBorder: const UnderlineInputBorder(
+                borderSide: BorderSide(
+                  color: AppColors.error,
+                  width: 2,
+                ),
               ),
             ),
             validator: (value) {
@@ -198,7 +257,10 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
             alignment: Alignment.centerRight,
             child: TextButton(
               onPressed: () {},
-              child: const Text('Forgot Password?'),
+              child: Text(
+                'Forgot Password?',
+                style: TextStyle(color: primaryColor),
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -213,32 +275,41 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
               ),
               child: Text(
                 authService.error!,
-                style: TextStyle(color: AppColors.error),
+                style: const TextStyle(color: AppColors.error),
               ),
             ),
           ElevatedButton(
             onPressed: authService.isLoading
                 ? null
                 : () async {
-                    if (_loginFormKey.currentState!.validate()) {
-                      final success = await authService.login(
-                        _loginEmailController.text,
-                        _loginPasswordController.text,
-                      );
-                      if (success && context.mounted) {
-                        context.go('/dashboard');
-                      }
-                    }
-                  },
+              if (_loginFormKey.currentState!.validate()) {
+                final success = await authService.login(
+                  _loginEmailController.text,
+                  _loginPasswordController.text,
+                );
+                if (success && context.mounted) {
+                  context.go('/dashboard');
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryColor,
+              foregroundColor: isDark ? AppColors.primary : AppColors.primaryDark,
+              minimumSize: const Size.fromHeight(AppConstants.buttonHeight),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+              ),
+              elevation: 0,
+            ),
             child: authService.isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
+                ? SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: isDark ? AppColors.primary : AppColors.primaryDark,
+              ),
+            )
                 : const Text('Login'),
           ),
           const SizedBox(height: 24),
@@ -247,14 +318,14 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
             children: [
               Text(
                 'Don\'t have an account? ',
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
               ),
               GestureDetector(
                 onTap: () => _tabController.animateTo(1),
                 child: Text(
                   'Register',
                   style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
+                    color: primaryColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -264,7 +335,6 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
           const SizedBox(height: 24),
           TextButton(
             onPressed: () async {
-              // Quick demo login
               await authService.login('demo@uber.com', 'password');
               // Schedule demo take-a-break after ~1 minute of going online
               try {
@@ -280,7 +350,7 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
             child: Text(
               'Skip Login (Demo Mode)',
               style: TextStyle(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                color: isDark ? Colors.grey[500] : Colors.grey[500],
                 decoration: TextDecoration.underline,
               ),
             ),
@@ -290,53 +360,79 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildRegisterForm(BuildContext context, AuthService authService) {
-    final theme = Theme.of(context);
-
+  Widget _buildRegisterForm(BuildContext context, AuthService authService, bool isDark, Color primaryColor) {
     return Form(
       key: _registerFormKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TextFormField(
+          _buildTextField(
             controller: _registerNameController,
-            decoration: const InputDecoration(
-              labelText: 'Full Name',
-              prefixIcon: Icon(Icons.person_outline),
-            ),
+            label: 'Full Name',
+            icon: Icons.person_outline,
             validator: Validators.name,
+            isDark: isDark,
+            primaryColor: primaryColor,
           ),
           const SizedBox(height: 16),
-          TextFormField(
+          _buildTextField(
             controller: _registerEmailController,
+            label: 'Email',
+            icon: Icons.email_outlined,
             keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
-              labelText: 'Email',
-              prefixIcon: Icon(Icons.email_outlined),
-            ),
             validator: Validators.email,
+            isDark: isDark,
+            primaryColor: primaryColor,
           ),
           const SizedBox(height: 16),
-          TextFormField(
+          _buildTextField(
             controller: _registerPhoneController,
+            label: 'Phone Number',
+            icon: Icons.phone_outlined,
             keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(
-              labelText: 'Phone Number',
-              prefixIcon: Icon(Icons.phone_outlined),
-            ),
             validator: Validators.phone,
+            isDark: isDark,
+            primaryColor: primaryColor,
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<VehicleType>(
             value: _selectedVehicleType,
-            decoration: const InputDecoration(
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black,
+              fontSize: 16,
+            ),
+            dropdownColor: isDark ? AppColors.darkSurface : AppColors.lightBackground,
+            decoration: InputDecoration(
               labelText: 'Vehicle Type',
-              prefixIcon: Icon(Icons.directions_car_outlined),
+              labelStyle: TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[600]),
+              floatingLabelStyle: TextStyle(color: primaryColor),
+              prefixIcon: Icon(
+                Icons.directions_car_outlined,
+                color: isDark ? Colors.grey[500] : Colors.grey[600],
+                size: 22,
+              ),
+              filled: false,
+              contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(
+                  color: isDark ? Colors.grey[800]! : Colors.grey[300]!,
+                  width: 1,
+                ),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(
+                  color: primaryColor,
+                  width: 2,
+                ),
+              ),
             ),
             items: VehicleType.values.map((type) {
               return DropdownMenuItem(
                 value: type,
-                child: Text(type.toString().split('.').last.toUpperCase()),
+                child: Text(
+                  type.toString().split('.').last.toUpperCase(),
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                ),
               );
             }).toList(),
             onChanged: (value) {
@@ -346,41 +442,80 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
             },
           ),
           const SizedBox(height: 16),
-          TextFormField(
+          _buildTextField(
             controller: _registerLicenseController,
-            decoration: const InputDecoration(
-              labelText: 'Driver\'s License / ID Number',
-              prefixIcon: Icon(Icons.badge_outlined),
-            ),
+            label: 'Driver\'s License / ID Number',
+            icon: Icons.badge_outlined,
             validator: Validators.licenseNumber,
+            isDark: isDark,
+            primaryColor: primaryColor,
           ),
           const SizedBox(height: 16),
           TextFormField(
             controller: _registerPasswordController,
             obscureText: !_showRegisterPassword,
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black,
+              fontSize: 16,
+            ),
             decoration: InputDecoration(
               labelText: 'Password',
-              prefixIcon: const Icon(Icons.lock_outline),
+              labelStyle: TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[600]),
+              floatingLabelStyle: TextStyle(color: primaryColor),
+              prefixIcon: Icon(
+                Icons.lock_outline,
+                color: isDark ? Colors.grey[500] : Colors.grey[600],
+                size: 22,
+              ),
               suffixIcon: IconButton(
-                icon: Icon(_showRegisterPassword ? Icons.visibility_off : Icons.visibility),
+                icon: Icon(
+                  _showRegisterPassword ? Icons.visibility_off : Icons.visibility,
+                  color: isDark ? Colors.grey[500] : Colors.grey[600],
+                ),
                 onPressed: () => setState(() => _showRegisterPassword = !_showRegisterPassword),
+              ),
+              filled: false,
+              contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(
+                  color: isDark ? Colors.grey[800]! : Colors.grey[300]!,
+                  width: 1,
+                ),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(
+                  color: primaryColor,
+                  width: 2,
+                ),
+              ),
+              errorBorder: const UnderlineInputBorder(
+                borderSide: BorderSide(
+                  color: AppColors.error,
+                  width: 1,
+                ),
+              ),
+              focusedErrorBorder: const UnderlineInputBorder(
+                borderSide: BorderSide(
+                  color: AppColors.error,
+                  width: 2,
+                ),
               ),
             ),
             validator: Validators.password,
           ),
           if (_registerPasswordController.text.isNotEmpty) ...[
             const SizedBox(height: 8),
-            _buildPasswordStrengthIndicator(),
+            _buildPasswordStrengthIndicator(isDark),
           ],
           const SizedBox(height: 16),
-          TextFormField(
+          _buildTextField(
             controller: _registerConfirmPasswordController,
+            label: 'Confirm Password',
+            icon: Icons.lock_outline,
             obscureText: true,
-            decoration: const InputDecoration(
-              labelText: 'Confirm Password',
-              prefixIcon: Icon(Icons.lock_outline),
-            ),
             validator: (value) => Validators.confirmPassword(value, _registerPasswordController.text),
+            isDark: isDark,
+            primaryColor: primaryColor,
           ),
           const SizedBox(height: 16),
           Row(
@@ -388,7 +523,8 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
               Checkbox(
                 value: _acceptTerms,
                 onChanged: (value) => setState(() => _acceptTerms = value ?? false),
-                activeColor: theme.colorScheme.primary,
+                activeColor: primaryColor,
+                checkColor: isDark ? AppColors.primary : AppColors.primaryDark,
               ),
               Expanded(
                 child: GestureDetector(
@@ -396,7 +532,7 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
                   child: Text(
                     'I accept the Terms & Conditions',
                     style: TextStyle(
-                      color: theme.colorScheme.onSurfaceVariant,
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
                     ),
                   ),
                 ),
@@ -408,29 +544,39 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
             onPressed: authService.isLoading || !_acceptTerms
                 ? null
                 : () async {
-                    if (_registerFormKey.currentState!.validate()) {
-                      final success = await authService.register(
-                        fullName: _registerNameController.text,
-                        email: _registerEmailController.text,
-                        phoneNumber: _registerPhoneController.text,
-                        password: _registerPasswordController.text,
-                        vehicleType: _selectedVehicleType,
-                        licenseNumber: _registerLicenseController.text,
-                      );
-                      if (success && context.mounted) {
-                        context.go('/dashboard');
-                      }
-                    }
-                  },
+              if (_registerFormKey.currentState!.validate()) {
+                final success = await authService.register(
+                  fullName: _registerNameController.text,
+                  email: _registerEmailController.text,
+                  phoneNumber: _registerPhoneController.text,
+                  password: _registerPasswordController.text,
+                  vehicleType: _selectedVehicleType,
+                  licenseNumber: _registerLicenseController.text,
+                );
+                if (success && context.mounted) {
+                  context.go('/dashboard');
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryColor,
+              foregroundColor: isDark ? AppColors.primary : AppColors.primaryDark,
+              minimumSize: const Size.fromHeight(AppConstants.buttonHeight),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+              ),
+              elevation: 0,
+              disabledBackgroundColor: isDark ? Colors.grey[800] : Colors.grey[300],
+            ),
             child: authService.isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
+                ? SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: isDark ? AppColors.primary : AppColors.primaryDark,
+              ),
+            )
                 : const Text('Register'),
           ),
         ],
@@ -438,7 +584,65 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildPasswordStrengthIndicator() {
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    required bool isDark,
+    required Color primaryColor,
+    TextInputType? keyboardType,
+    bool obscureText = false,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      obscureText: obscureText,
+      style: TextStyle(
+        color: isDark ? Colors.white : Colors.black,
+        fontSize: 16,
+      ),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[600]),
+        floatingLabelStyle: TextStyle(color: primaryColor),
+        prefixIcon: Icon(
+          icon,
+          color: isDark ? Colors.grey[500] : Colors.grey[600],
+          size: 22,
+        ),
+        filled: false,
+        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+        enabledBorder: UnderlineInputBorder(
+          borderSide: BorderSide(
+            color: isDark ? Colors.grey[800]! : Colors.grey[300]!,
+            width: 1,
+          ),
+        ),
+        focusedBorder: UnderlineInputBorder(
+          borderSide: BorderSide(
+            color: primaryColor,
+            width: 2,
+          ),
+        ),
+        errorBorder: const UnderlineInputBorder(
+          borderSide: BorderSide(
+            color: AppColors.error,
+            width: 1,
+          ),
+        ),
+        focusedErrorBorder: const UnderlineInputBorder(
+          borderSide: BorderSide(
+            color: AppColors.error,
+            width: 2,
+          ),
+        ),
+      ),
+      validator: validator,
+    );
+  }
+
+  Widget _buildPasswordStrengthIndicator(bool isDark) {
     final strengthText = Validators.getPasswordStrengthText(_passwordStrength);
     final strengthColor = _getPasswordStrengthColor(_passwordStrength);
 
@@ -448,12 +652,14 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
         Row(
           children: List.generate(
             6,
-            (index) => Expanded(
+                (index) => Expanded(
               child: Container(
                 height: 4,
                 margin: const EdgeInsets.only(right: 4),
                 decoration: BoxDecoration(
-                  color: index < _passwordStrength ? strengthColor : Colors.grey[300],
+                  color: index < _passwordStrength
+                      ? strengthColor
+                      : (isDark ? Colors.grey[800] : Colors.grey[300]),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),

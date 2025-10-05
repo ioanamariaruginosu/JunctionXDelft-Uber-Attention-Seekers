@@ -28,12 +28,19 @@ class _SettingsPageState extends State<SettingsPage> {
     final authService = context.watch<AuthService>();
     final themeProvider = context.watch<ThemeProvider>();
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = isDark ? Colors.white : Colors.black;
+    final backgroundColor = isDark ? const Color(0xFF121212) : Colors.white;
+    final cardColor = isDark ? const Color(0xFF1F1F1F) : Colors.white;
 
     return Scaffold(
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: const Text('Settings'),
+        backgroundColor: backgroundColor,
+        elevation: 0,
+        title: Text('Settings', style: TextStyle(color: primaryColor)),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: primaryColor),
           onPressed: () => context.pop(),
         ),
       ),
@@ -45,53 +52,64 @@ class _SettingsPageState extends State<SettingsPage> {
             [
               ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: theme.colorScheme.primary,
+                  backgroundColor: primaryColor,
                   child: Text(
                     authService.currentUser?.fullName.substring(0, 1).toUpperCase() ?? 'U',
-                    style: TextStyle(color: theme.colorScheme.onPrimary),
+                    style: TextStyle(color: isDark ? Colors.black : Colors.white),
                   ),
                 ),
-                title: Text(authService.currentUser?.fullName ?? 'User'),
-                subtitle: Text(authService.currentUser?.email ?? ''),
-                trailing: const Icon(Icons.edit),
+                title: Text(
+                  authService.currentUser?.fullName ?? 'User',
+                  style: TextStyle(color: primaryColor),
+                ),
+                subtitle: Text(
+                  authService.currentUser?.email ?? '',
+                  style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                ),
+                trailing: Icon(Icons.edit, color: primaryColor),
                 onTap: () {},
               ),
             ],
+            isDark,
+            primaryColor,
+            cardColor,
           ),
           const SizedBox(height: 16),
           _buildSection(
             'Appearance',
             [
               ListTile(
-                leading: const Icon(Icons.dark_mode),
-                title: const Text('Dark Mode'),
+                leading: Icon(Icons.dark_mode, color: primaryColor),
+                title: Text('Dark Mode', style: TextStyle(color: primaryColor)),
                 subtitle: Text(
                   themeProvider.themeMode == ThemeMode.system
                       ? 'System'
                       : themeProvider.themeMode == ThemeMode.dark
-                          ? 'On'
-                          : 'Off',
+                      ? 'On'
+                      : 'Off',
+                  style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
                 ),
                 trailing: PopupMenuButton<ThemeMode>(
                   onSelected: (mode) => themeProvider.setThemeMode(mode),
+                  color: cardColor,
                   itemBuilder: (context) => [
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: ThemeMode.system,
-                      child: Text('System'),
+                      child: Text('System', style: TextStyle(color: primaryColor)),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: ThemeMode.light,
-                      child: Text('Light'),
+                      child: Text('Light', style: TextStyle(color: primaryColor)),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: ThemeMode.dark,
-                      child: Text('Dark'),
+                      child: Text('Dark', style: TextStyle(color: primaryColor)),
                     ),
                   ],
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      border: Border.all(color: theme.colorScheme.outline),
+                      border: Border.all(color: isDark ? Colors.grey[700]! : Colors.grey[300]!),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -101,103 +119,145 @@ class _SettingsPageState extends State<SettingsPage> {
                           themeProvider.themeMode == ThemeMode.system
                               ? 'System'
                               : themeProvider.themeMode == ThemeMode.dark
-                                  ? 'Dark'
-                                  : 'Light',
-                          style: AppTextStyles.bodyMedium,
+                              ? 'Dark'
+                              : 'Light',
+                          style: AppTextStyles.bodyMedium.copyWith(color: primaryColor),
                         ),
-                        const Icon(Icons.arrow_drop_down),
+                        Icon(Icons.arrow_drop_down, color: primaryColor),
                       ],
                     ),
                   ),
                 ),
               ),
             ],
+            isDark,
+            primaryColor,
+            cardColor,
           ),
           const SizedBox(height: 16),
           _buildSection(
             'Notifications',
             [
               SwitchListTile(
-                secondary: const Icon(Icons.notifications),
-                title: const Text('Push Notifications'),
-                subtitle: const Text('Receive alerts for trips and bonuses'),
+                secondary: Icon(Icons.notifications, color: primaryColor),
+                title: Text('Push Notifications', style: TextStyle(color: primaryColor)),
+                subtitle: Text(
+                  'Receive alerts for trips and bonuses',
+                  style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                ),
                 value: _notifications,
+                activeColor: primaryColor,
                 onChanged: (value) => setState(() => _notifications = value),
               ),
               SwitchListTile(
-                secondary: const Icon(Icons.volume_up),
-                title: const Text('Sound Effects'),
-                subtitle: const Text('Play sounds for notifications'),
+                secondary: Icon(Icons.volume_up, color: primaryColor),
+                title: Text('Sound Effects', style: TextStyle(color: primaryColor)),
+                subtitle: Text(
+                  'Play sounds for notifications',
+                  style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                ),
                 value: _soundEffects,
+                activeColor: primaryColor,
                 onChanged: _notifications ? (value) => setState(() => _soundEffects = value) : null,
               ),
               SwitchListTile(
-                secondary: const Icon(Icons.vibration),
-                title: const Text('Vibration'),
-                subtitle: const Text('Vibrate for important alerts'),
+                secondary: Icon(Icons.vibration, color: primaryColor),
+                title: Text('Vibration', style: TextStyle(color: primaryColor)),
+                subtitle: Text(
+                  'Vibrate for important alerts',
+                  style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                ),
                 value: _vibration,
+                activeColor: primaryColor,
                 onChanged: _notifications ? (value) => setState(() => _vibration = value) : null,
               ),
               SwitchListTile(
-                secondary: const Icon(Icons.record_voice_over),
-                title: const Text('Voice Alerts'),
-                subtitle: const Text('Atlas speaks important updates'),
+                secondary: Icon(Icons.record_voice_over, color: primaryColor),
+                title: Text('Voice Alerts', style: TextStyle(color: primaryColor)),
+                subtitle: Text(
+                  'Atlas speaks important updates',
+                  style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                ),
                 value: _voiceAlerts,
+                activeColor: primaryColor,
                 onChanged: (value) => setState(() => _voiceAlerts = value),
               ),
             ],
+            isDark,
+            primaryColor,
+            cardColor,
           ),
           const SizedBox(height: 16),
           _buildSection(
             'Atlas AI Settings',
             [
               ListTile(
-                leading: const Icon(Icons.assistant),
-                title: const Text('Atlas Personality'),
-                subtitle: Text('Current: ${_atlasPersonality.substring(0, 1).toUpperCase()}${_atlasPersonality.substring(1)}'),
+                leading: Icon(Icons.assistant, color: primaryColor),
+                title: Text('Atlas Personality', style: TextStyle(color: primaryColor)),
+                subtitle: Text(
+                  'Current: ${_atlasPersonality.substring(0, 1).toUpperCase()}${_atlasPersonality.substring(1)}',
+                  style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                ),
                 trailing: PopupMenuButton<String>(
                   onSelected: (value) => setState(() => _atlasPersonality = value),
+                  color: cardColor,
                   itemBuilder: (context) => [
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'aggressive',
                       child: ListTile(
-                        title: Text('Aggressive'),
-                        subtitle: Text('Maximum earnings focus'),
+                        title: Text('Aggressive', style: TextStyle(color: primaryColor)),
+                        subtitle: Text(
+                          'Maximum earnings focus',
+                          style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                        ),
                         dense: true,
                       ),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'balanced',
                       child: ListTile(
-                        title: Text('Balanced'),
-                        subtitle: Text('Mix of earnings and wellness'),
+                        title: Text('Balanced', style: TextStyle(color: primaryColor)),
+                        subtitle: Text(
+                          'Mix of earnings and wellness',
+                          style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                        ),
                         dense: true,
                       ),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'relaxed',
                       child: ListTile(
-                        title: Text('Relaxed'),
-                        subtitle: Text('Focus on driver wellness'),
+                        title: Text('Relaxed', style: TextStyle(color: primaryColor)),
+                        subtitle: Text(
+                          'Focus on driver wellness',
+                          style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                        ),
                         dense: true,
                       ),
                     ),
                   ],
-                  child: const Icon(Icons.arrow_forward_ios),
+                  child: Icon(Icons.arrow_forward_ios, color: primaryColor),
                 ),
               ),
               SwitchListTile(
-                secondary: const Icon(Icons.free_breakfast),
-                title: const Text('Auto Break Reminders'),
-                subtitle: Text('Suggest breaks every $_breakInterval hours'),
+                secondary: Icon(Icons.free_breakfast, color: primaryColor),
+                title: Text('Auto Break Reminders', style: TextStyle(color: primaryColor)),
+                subtitle: Text(
+                  'Suggest breaks every $_breakInterval hours',
+                  style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                ),
                 value: _autoBreaks,
+                activeColor: primaryColor,
                 onChanged: (value) => setState(() => _autoBreaks = value),
               ),
               if (_autoBreaks)
                 ListTile(
-                  leading: const Icon(Icons.timer),
-                  title: const Text('Break Interval'),
-                  subtitle: Text('$_breakInterval hours'),
+                  leading: Icon(Icons.timer, color: primaryColor),
+                  title: Text('Break Interval', style: TextStyle(color: primaryColor)),
+                  subtitle: Text(
+                    '$_breakInterval hours',
+                    style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                  ),
                   trailing: SizedBox(
                     width: 150,
                     child: Slider(
@@ -206,20 +266,27 @@ class _SettingsPageState extends State<SettingsPage> {
                       max: 6,
                       divisions: 5,
                       label: '$_breakInterval hours',
+                      activeColor: primaryColor,
                       onChanged: (value) => setState(() => _breakInterval = value.round()),
                     ),
                   ),
                 ),
             ],
+            isDark,
+            primaryColor,
+            cardColor,
           ),
           const SizedBox(height: 16),
           _buildSection(
             'Goals',
             [
               ListTile(
-                leading: const Icon(Icons.flag),
-                title: const Text('Daily Earnings Goal'),
-                subtitle: Text('\$${_dailyGoal.toStringAsFixed(0)}'),
+                leading: Icon(Icons.flag, color: primaryColor),
+                title: Text('Daily Earnings Goal', style: TextStyle(color: primaryColor)),
+                subtitle: Text(
+                  '\$${_dailyGoal.toStringAsFixed(0)}',
+                  style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                ),
                 trailing: SizedBox(
                   width: 150,
                   child: Slider(
@@ -228,14 +295,18 @@ class _SettingsPageState extends State<SettingsPage> {
                     max: 500,
                     divisions: 45,
                     label: '\$${_dailyGoal.toStringAsFixed(0)}',
+                    activeColor: primaryColor,
                     onChanged: (value) => setState(() => _dailyGoal = value),
                   ),
                 ),
               ),
               ListTile(
-                leading: const Icon(Icons.trending_up),
-                title: const Text('Weekly Earnings Goal'),
-                subtitle: Text('\$${_weeklyGoal.toStringAsFixed(0)}'),
+                leading: Icon(Icons.trending_up, color: primaryColor),
+                title: Text('Weekly Earnings Goal', style: TextStyle(color: primaryColor)),
+                subtitle: Text(
+                  '\$${_weeklyGoal.toStringAsFixed(0)}',
+                  style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                ),
                 trailing: SizedBox(
                   width: 150,
                   child: Slider(
@@ -244,40 +315,50 @@ class _SettingsPageState extends State<SettingsPage> {
                     max: 3000,
                     divisions: 25,
                     label: '\$${_weeklyGoal.toStringAsFixed(0)}',
+                    activeColor: primaryColor,
                     onChanged: (value) => setState(() => _weeklyGoal = value),
                   ),
                 ),
               ),
             ],
+            isDark,
+            primaryColor,
+            cardColor,
           ),
           const SizedBox(height: 16),
           _buildSection(
             'About',
             [
               ListTile(
-                leading: const Icon(Icons.info),
-                title: const Text('App Version'),
-                subtitle: const Text('1.0.0'),
+                leading: Icon(Icons.info, color: primaryColor),
+                title: Text('App Version', style: TextStyle(color: primaryColor)),
+                subtitle: Text(
+                  '1.0.0',
+                  style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                ),
               ),
               ListTile(
-                leading: const Icon(Icons.description),
-                title: const Text('Terms of Service'),
-                trailing: const Icon(Icons.arrow_forward_ios),
+                leading: Icon(Icons.description, color: primaryColor),
+                title: Text('Terms of Service', style: TextStyle(color: primaryColor)),
+                trailing: Icon(Icons.arrow_forward_ios, color: primaryColor),
                 onTap: () {},
               ),
               ListTile(
-                leading: const Icon(Icons.privacy_tip),
-                title: const Text('Privacy Policy'),
-                trailing: const Icon(Icons.arrow_forward_ios),
+                leading: Icon(Icons.privacy_tip, color: primaryColor),
+                title: Text('Privacy Policy', style: TextStyle(color: primaryColor)),
+                trailing: Icon(Icons.arrow_forward_ios, color: primaryColor),
                 onTap: () {},
               ),
               ListTile(
-                leading: const Icon(Icons.help),
-                title: const Text('Help & Support'),
-                trailing: const Icon(Icons.arrow_forward_ios),
+                leading: Icon(Icons.help, color: primaryColor),
+                title: Text('Help & Support', style: TextStyle(color: primaryColor)),
+                trailing: Icon(Icons.arrow_forward_ios, color: primaryColor),
                 onTap: () {},
               ),
             ],
+            isDark,
+            primaryColor,
+            cardColor,
           ),
           const SizedBox(height: 24),
           ElevatedButton(
@@ -289,6 +370,12 @@ class _SettingsPageState extends State<SettingsPage> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              minimumSize: const Size.fromHeight(AppConstants.buttonHeight),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+              ),
+              elevation: 0,
             ),
             child: const Text('Logout'),
           ),
@@ -298,7 +385,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildSection(String title, List<Widget> children) {
+  Widget _buildSection(String title, List<Widget> children, bool isDark, Color primaryColor, Color cardColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -308,11 +395,13 @@ class _SettingsPageState extends State<SettingsPage> {
             title,
             style: AppTextStyles.bodyLarge.copyWith(
               fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
+              color: primaryColor,
             ),
           ),
         ),
         Card(
+          color: cardColor,
+          elevation: isDark ? 2 : 1,
           child: Column(children: children),
         ),
       ],
