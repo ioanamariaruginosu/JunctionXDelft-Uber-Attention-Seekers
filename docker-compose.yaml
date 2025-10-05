@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ./backend
+    container_name: seekers-backend
+    ports:
+      - "8080:8080"
+    environment:
+      # Use profiles only if you actually have application-docker.yml etc.
+      # SPRING_PROFILES_ACTIVE: docker
+
+      # Example extra JVM tuning (optional)
+      JAVA_OPTS: "-Xms256m -Xmx512m"
+
+      # If you added CORS config reading from env, pass it here:
+      # ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:8081"
+    restart: unless-stopped
+    # If later connect to DB/Redis, uncomment depends_on
+    # depends_on:
+    #   - db
+    #   - redis
+
+  # === OPTIONAL: Postgres (only if/when you wire a DB) ===
+  # db:
+  #   image: postgres:15
+  #   container_name: seekers-postgres
+  #   environment:
+  #     POSTGRES_DB: seekers
+  #     POSTGRES_USER: seekers
+  #     POSTGRES_PASSWORD: seekers
+  #   volumes:
+  #     - db_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+  #   restart: unless-stopped
+
+  # === OPTIONAL: Redis (for caching) ===
+  # redis:
+  #   image: redis:7
+  #   container_name: seekers-redis
+  #   ports:
+  #     - "6379:6379"
+  #   restart: unless-stopped
+
+# volumes:
+#   db_data:
