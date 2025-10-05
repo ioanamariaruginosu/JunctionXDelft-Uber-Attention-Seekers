@@ -34,11 +34,10 @@ public class HoursController {
         status.put("totalContinuousToday", hoursService.getTotalMinutesToday(userId));
         status.put("totalDrivingToday", hoursService.getTotalDrivingMinutesToday(userId));
 
-        // Add these so the client relies on the backend clock
-        status.put("active", hoursService.isActive(userId)); // boolean
+        status.put("active", hoursService.isActive(userId));
 
-        LocalDateTime startedAt = hoursService.getCurrentSessionStart(userId);    // may be null
-        status.put("startedAt", startedAt != null ? startedAt.toString() : null); // ISO-8601 string
+        LocalDateTime startedAt = hoursService.getCurrentSessionStart(userId);
+        status.put("startedAt", startedAt != null ? startedAt.toString() : null);
 
         return status;
     }
