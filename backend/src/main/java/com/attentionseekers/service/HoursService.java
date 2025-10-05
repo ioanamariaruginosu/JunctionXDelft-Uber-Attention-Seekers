@@ -25,21 +25,11 @@ public class HoursService {
         this.jdbc = jdbc;
     }
 
-    /* ===================== Persistence helpers (DB instead of JSON) ===================== */
-
-    /**
-     * Persist a full snapshot: delete all rows for the user and re-insert
-     * closed sessions + one open session (if any).
-     * Simple and robust; fine for our scale.
-     */
     @Transactional
     protected void saveSessionInfo(String userId, SessionInfo info) {
-        // Remove any previous rows for this user's history
         jdbc.update("DELETE FROM demand.hours_session WHERE user_id = ?", userId);
 
-        // Insert closed sessions
         for (SessionPeriod p : info.getSessions()) {
-            // guard: only persist closed sessions
             if (p.getEnd() != null) {
                 jdbc.update(
                     "INSERT INTO demand.hours_session (user_id, started_at, ended_at) VALUES (?,?,?)",
@@ -50,7 +40,6 @@ public class HoursService {
             }
         }
 
-        // Insert open session if exists
         LocalDateTime openStart = info.getCurrentSessionStart();
         if (openStart != null) {
             jdbc.update(
@@ -61,15 +50,9 @@ public class HoursService {
         }
     }
 
-    /**
-     * Rebuild SessionInfo from DB rows.
-     * - closed rows -> SessionPeriod(start,end)
-     * - one open row (ended_at NULL) -> currentSessionStart
-     */
     protected SessionInfo loadSessionInfo(String userId) {
         SessionInfo info = new SessionInfo();
 
-        // Load all rows for the user
         jdbc.query(
             "SELECT started_at, ended_at " +
             "  FROM demand.hours_session " +
@@ -79,7 +62,6 @@ public class HoursService {
                 LocalDateTime start = rs.getTimestamp("started_at").toLocalDateTime();
                 Timestamp endedTs = rs.getTimestamp("ended_at");
                 if (endedTs == null) {
-                    // open session
                     info.setCurrentSessionStart(start);
                 } else {
                     LocalDateTime end = endedTs.toLocalDateTime();
@@ -95,8 +77,6 @@ public class HoursService {
     private SessionInfo getSessionInfo(String userId) {
         return userSessions.computeIfAbsent(userId, this::loadSessionInfo);
     }
-
-    /* ===================== Public API (unchanged) ===================== */
 
     public void startSession(String userId) {
         SessionInfo info = getSessionInfo(userId);
@@ -119,12 +99,10 @@ public class HoursService {
     }
 
     public int getDrivingMinutes(String userId) {
-        // Keep as-is for now
         return 0;
     }
 
     public int getTotalDrivingMinutesToday(String userId) {
-        // Keep as-is for now
         return 0;
     }
 
