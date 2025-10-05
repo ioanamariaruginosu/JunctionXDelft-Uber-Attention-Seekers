@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
 import '../models/user_model.dart';
+import '../services/rest_timer_service.dart';
 import '../utils/validators.dart';
 import '../utils/theme.dart';
 import '../utils/constants.dart';
@@ -265,6 +266,13 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
             onPressed: () async {
               // Quick demo login
               await authService.login('demo@uber.com', 'password');
+              // Schedule demo take-a-break after ~1 minute of going online
+              try {
+                final restTimer = context.read<RestTimerService>();
+                restTimer.scheduleDemoTakeBreak(seconds: 60);
+              } catch (_) {
+                // RestTimerService may not be available in some test contexts
+              }
               if (context.mounted) {
                 context.go('/dashboard');
               }

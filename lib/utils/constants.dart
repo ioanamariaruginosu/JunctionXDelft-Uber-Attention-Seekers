@@ -121,4 +121,7 @@ class Constants {
     'dailyGoal': 150.0,
     'weeklyGoal': 1000.0,
   };
+
+  // Toggle demo features (set true for presentations to enable scripted mascot messages)
+  static const bool kDemoMode = false;
 }

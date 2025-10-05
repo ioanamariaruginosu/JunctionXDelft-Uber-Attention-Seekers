@@ -72,6 +72,8 @@ class _RealMapWidgetState extends State<RealMapWidget> {
   List<DemandZone> _demandZones = [];
   List<RestLocation> _restLocations = [];
   Timer? _zoneTimer;
+  // Keep a subscription-like reference to the NotificationService to watch rest pin toggles
+  NotificationService? _notificationService;
 
   @override
   void initState() {
@@ -119,6 +121,13 @@ class _RealMapWidgetState extends State<RealMapWidget> {
     } catch (e, stackTrace) {
       print('Error fetching rest locations: $e');
       print('Stack trace: $stackTrace');
+    }
+  }
+
+  // Called when NotificationService.showRestPins toggles
+  void _onRestPinsToggled(bool show) {
+    if (show) {
+      _fetchRestLocations();
     }
   }
 
@@ -235,7 +244,17 @@ class _RealMapWidgetState extends State<RealMapWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final showRestPins = context.watch<NotificationService>().showRestPins;
+    final notif = context.watch<NotificationService>();
+    final showRestPins = notif.showRestPins;
+
+    // ensure we keep a reference to the service and react to manual changes
+    if (_notificationService != notif) {
+      _notificationService = notif;
+      // call fetch immediately if pins are already visible
+      if (notif.showRestPins) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _fetchRestLocations());
+      }
+    }
 
     return Scaffold(
       body: Stack(

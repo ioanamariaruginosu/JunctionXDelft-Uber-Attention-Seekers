@@ -39,6 +39,7 @@ class AppColors {
 
   static const Color maskotGlow = Color(0xFF6366F1);
   static const Color maskotSecondary = Color(0xFF818CF8);
+  static const Color atlasGlow = Color(0xFF7C3AED);
 }
 
 class AppTextStyles {
@@ -61,6 +62,11 @@ class AppTextStyles {
 
   static const TextStyle headline4 = TextStyle(
     fontSize: 20,
+    fontWeight: FontWeight.w600,
+  );
+
+  static const TextStyle headline6 = TextStyle(
+    fontSize: 18,
     fontWeight: FontWeight.w600,
   );
 

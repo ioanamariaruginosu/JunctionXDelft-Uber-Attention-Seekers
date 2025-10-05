@@ -144,4 +144,25 @@ class RestTimerService extends ChangeNotifier {
     _pollTimer?.cancel();
     super.dispose();
   }
+
+  /// Schedule a demo 'take a break' notification after [seconds] real seconds.
+  /// This is used by the demo flow to simulate a driver needing a break shortly
+  /// after going online. It does not alter production thresholds.
+  void scheduleDemoTakeBreak({int seconds = 60}) {
+    // Cancel existing local timers to avoid interference
+    stopLocalTimer();
+    _pollTimer?.cancel();
+
+    // Mark session active for demo purposes
+    activeSession = true;
+    notifyListeners();
+
+    Timer(Duration(seconds: seconds), () {
+      // Fire the wellness reminder just like the normal threshold would
+      notificationService?.showWellnessReminder('Demo: Take a break — you have been online for a short demo session.');
+      // Mark the 120-minute alert as fired to avoid repeated messages in demo
+      _alert120Fired = true;
+      notifyListeners();
+    });
+  }
 }

@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import '../models/trip_model.dart';
 import '../utils/api_client.dart';
 import '../utils/constants.dart';
+import 'mock_data_service.dart';
+import 'notification_service.dart';
+import 'demand_service.dart';
 
 class MaskotAIService extends ChangeNotifier {
   final Random _random = Random();
@@ -20,8 +23,64 @@ class MaskotAIService extends ChangeNotifier {
   bool get isTyping => _isTyping;
   bool get isEnabled => _isEnabled;
 
-  MaskotAIService() {
+  // Optional injections allow the mascot to use real app data for messages
+  final MockDataService? mockData;
+  final NotificationService? notificationService;
+  final DemandService? demandService;
+  Timer? _monitorTimer;
+  bool _disposed = false;
+  // Demo mode timer and scripted messages (used only for presentation/demo)
+  final bool demoMode;
+  Timer? _demoTimer;
+  int _demoIndex = 0;
+  final List<String> _demoMessages = [
+    '☕ Demo: You have been driving for 3 hours. Time for a 15-minute break?',
+    '🛑 Demo: Break reminder ended. You earned a wellness bonus for resting!',
+    '🔥 Demo: High demand in Downtown — 2.5x surge. Consider heading there.',
+    '🎉 Demo: Achievement Unlocked — 10 trips completed today!',
+    '💡 Demo tip: Chain rides in the same area to minimize dead miles.'
+  ];
+
+  MaskotAIService({this.mockData, this.notificationService, this.demandService, this.demoMode = false}) {
     _initializeMaskot();
+    // If demoMode is enabled, run a scripted sequence of hardcoded messages for presentation.
+    if (demoMode) {
+      _startDemoSequence();
+    } else {
+      // lightweight periodic monitor to generate contextual messages
+      _monitorTimer = Timer.periodic(const Duration(seconds: 10), (_) => _monitorState());
+    }
+  }
+
+  void _startDemoSequence() {
+    // Immediately add the first demo message
+    if (_disposed) return;
+    final String msg = _demoMessages[_demoIndex % _demoMessages.length];
+    _addMessage(ChatMessage(text: msg, isUser: false, timestamp: DateTime.now()));
+    // Also expose the demo message as the current suggestion so UI fallbacks can display it
+    _currentSuggestion = msg;
+    setState(MaskotState.speaking);
+    notifyListeners();
+
+    _demoIndex++;
+    // Cycle through demo messages on a short interval so presenters can showcase behaviors quickly
+    _demoTimer = Timer.periodic(const Duration(seconds: 8), (_) {
+      if (_disposed) return;
+      final String msg = _demoMessages[_demoIndex % _demoMessages.length];
+      _addMessage(ChatMessage(text: msg, isUser: false, timestamp: DateTime.now()));
+      // Update suggestion and state so widgets that read currentSuggestion show the demo message
+      _currentSuggestion = msg;
+      setState(MaskotState.speaking);
+      _demoIndex++;
+      notifyListeners();
+      // Clear suggestion after a short while so it doesn't persist forever
+      Timer(const Duration(seconds: 6), () {
+        if (_disposed) return;
+        _currentSuggestion = null;
+        setState(MaskotState.idle);
+        notifyListeners();
+      });
+    });
   }
 
   void _initializeMaskot() {
@@ -205,6 +264,52 @@ class MaskotAIService extends ChangeNotifier {
     Timer(const Duration(seconds: 10), () {
       setState(MaskotState.idle);
     });
+  }
+
+  void _monitorState() {
+    // Observe injected services and push light-weight messages
+    if (_disposed) return;
+
+    // 1) If notification service has active popups, surface the top one
+    if (notificationService != null && notificationService!.activePopups.isNotEmpty) {
+      final p = notificationService!.activePopups.first;
+      _addMessage(ChatMessage(text: '${p.title}: ${p.message}', isUser: false, timestamp: DateTime.now()));
+      notifyListeners();
+      return;
+    }
+
+    // 2) Trip request
+    if (mockData != null && mockData!.currentTripRequest != null) {
+      final t = mockData!.currentTripRequest!;
+      _addMessage(ChatMessage(text: 'New request: ${t.pickupLocation} → ${t.dropoffLocation} • \$${t.totalEarnings.toStringAsFixed(2)}', isUser: false, timestamp: DateTime.now()));
+      notifyListeners();
+      return;
+    }
+
+    // 3) High demand nudges
+    if (mockData != null && mockData!.demandZones.isNotEmpty) {
+      final highest = mockData!.demandZones.entries.reduce((a, b) => a.value > b.value ? a : b);
+      if (highest.value >= 2.0 && _random.nextBool()) {
+        _addMessage(ChatMessage(text: 'High demand at ${highest.key}: ${highest.value.toStringAsFixed(1)}x — consider heading there.', isUser: false, timestamp: DateTime.now()));
+        notifyListeners();
+        return;
+      }
+    }
+
+    // occasional tip fallback
+    if (_random.nextInt(8) == 0) {
+      final tip = _getTipResponse();
+      _addMessage(ChatMessage(text: tip, isUser: false, timestamp: DateTime.now()));
+      notifyListeners();
+    }
+  }
+
+  @override
+  void dispose() {
+    _monitorTimer?.cancel();
+    _demoTimer?.cancel();
+    _disposed = true;
+    super.dispose();
   }
 
   void provideDemandPrediction() {
