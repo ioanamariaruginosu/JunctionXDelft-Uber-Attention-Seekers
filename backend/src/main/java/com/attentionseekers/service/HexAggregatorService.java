@@ -84,7 +84,6 @@ public class HexAggregatorService {
 
     private Map<String, Double> aggregateHexCountsToZones(EnumMap<DemandBucket, Map<String, Integer>> hexCounts, DemandDataLoader loader) {
         Map<String, Integer> counts = hexCounts.values().stream().findFirst().orElse(new HashMap<>());
-        // normalize per-hex by max
         int max = counts.values().stream().mapToInt(Integer::intValue).max().orElse(0);
         Map<String, Double> hexNorm = new LinkedHashMap<>();
         Map<String, Integer> hexActivity = new LinkedHashMap<>();
@@ -94,7 +93,6 @@ public class HexAggregatorService {
             hexNorm.put(e.getKey(), Math.round(norm * 100.0) / 100.0);
         }
 
-        // aggregate to zones (weighted by activity)
         Map<String, Double> zoneSum = new LinkedHashMap<>();
         Map<String, Integer> zoneWeight = new LinkedHashMap<>();
         for (Map.Entry<String, Double> he : hexNorm.entrySet()) {
@@ -117,7 +115,6 @@ public class HexAggregatorService {
         return zoneSignal;
     }
 
-    // reused helpers
     private String safeGet(String[] fields, int idx) {
         if (idx < 0 || idx >= fields.length) return "";
         return fields[idx];
