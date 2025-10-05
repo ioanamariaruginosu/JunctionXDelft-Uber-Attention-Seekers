@@ -175,7 +175,9 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
               left: 0,
               child: Container(
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
+                  color: theme.brightness == Brightness.dark
+                      ? const Color(0xFF1F1F1F)
+                      : Colors.white,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
@@ -187,7 +189,9 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                 ),
                 child: IconButton(
                   icon: const Icon(Icons.menu),
-                  color: theme.colorScheme.primary,
+                  color: theme.brightness == Brightness.dark
+                      ? Colors.white
+                      : Colors.black,
                   onPressed: () => _scaffoldKey.currentState?.openDrawer(),
                 ),
               ),
@@ -196,6 +200,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
               child: AnimatedBuilder(
                 animation: _counterAnimation,
                 builder: (context, child) {
+                  // rest of your code
                   final earnings = mockData.todayEarnings?.totalEarnings ?? 0;
                   final displayEarnings = earnings * _counterAnimation.value;
                   return Container(
@@ -416,74 +421,114 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
     final user = authService.currentUser;
 
     return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: BoxDecoration(color: theme.colorScheme.primary),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: theme.colorScheme.surface,
-                  child: Text(
-                    user?.fullName.substring(0, 1).toUpperCase() ?? 'U',
-                    style: TextStyle(fontSize: 24, color: theme.colorScheme.primary),
+      child: Container(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF1F1F1F)
+            : Colors.white,
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.black
+                        : Colors.white,
+                    child: Text(
+                      user?.fullName.substring(0, 1).toUpperCase() ?? 'U',
+                      style: TextStyle(
+                        fontSize: 24,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.black,
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  user?.fullName ?? 'User',
-                  style: TextStyle(
-                    color: theme.colorScheme.onPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                  const SizedBox(height: 12),
+                  Text(
+                    user?.fullName ?? 'User',
+                    style: TextStyle(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.black
+                          : Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                Text(
-                  user?.email ?? '',
-                  style: TextStyle(
-                    color: theme.colorScheme.onPrimary.withOpacity(0.8),
-                    fontSize: 14,
+                  Text(
+                    user?.email ?? '',
+                    style: TextStyle(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.black.withOpacity(0.7)
+                          : Colors.white.withOpacity(0.8),
+                      fontSize: 14,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.dashboard),
-            title: const Text('Dashboard'),
-            onTap: () => Navigator.pop(context),
-          ),
-          ListTile(
-            leading: const Icon(Icons.person),
-            title: const Text('Profile & Stats'),
-            onTap: () {
-              Navigator.pop(context);
-              context.push('/profile');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.settings),
-            title: const Text('Settings'),
-            onTap: () {
-              Navigator.pop(context);
-              context.push('/settings');
-            },
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Logout'),
-            onTap: () async {
-              await authService.logout();
-              if (context.mounted) {
-                context.go('/auth');
-              }
-            },
-          ),
-        ],
+            ListTile(
+              leading: Icon(
+                Icons.dashboard,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black,
+              ),
+              title: const Text('Dashboard'),
+              onTap: () => Navigator.pop(context),
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.person,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black,
+              ),
+              title: const Text('Profile & Stats'),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/profile');
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.settings,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black,
+              ),
+              title: const Text('Settings'),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/settings');
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: Icon(
+                Icons.logout,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black,
+              ),
+              title: const Text('Logout'),
+              onTap: () async {
+                await authService.logout();
+                if (context.mounted) {
+                  context.go('/auth');
+                }
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,6 +1,6 @@
 class Constants {
-  static const String appName = 'Uber Co-Pilot';
-  static const String tagline = 'Your AI-powered earnings optimizer';
+  static const String appName = 'Uber';
+  static const String tagline = 'Get moving with Uber';
 
   static const int tripRequestTimeout = 15;
   static const int mockTripMinInterval = 30;
@@ -38,10 +38,10 @@ class Constants {
   ];
 
   static const List<String> maskotGreetings = [
-    'Hello! I\'m Maskot, your AI co-pilot. Ready to maximize your earnings today?',
-    'Welcome back! Maskot here, let\'s make today profitable!',
-    'Hey there! Maskot at your service. Time to optimize those earnings!',
-    'Good to see you! I\'m Maskot, and I\'ve got some hot spots for you.',
+    'Hello! I\'m Ube, your AI co-pilot. Ready to maximize your earnings today?',
+    'Welcome back! Ube here, let\'s make today profitable!',
+    'Hey there! Ube at your service. Time to optimize those earnings!',
+    'Good to see you! I\'m Ube, and I\'ve got some hot spots for you.',
   ];
 
   static const List<String> maskotEncouragements = [

@@ -43,6 +43,7 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Positioned(
       bottom: 0,
@@ -52,10 +53,10 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
         duration: const Duration(milliseconds: 300),
         height: widget.isOnline ? 80 : 140,
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
+          color: isDark ? const Color(0xFF1F1F1F) : Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -63,13 +64,13 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: widget.isOnline
-            ? _buildOnlineStatus(theme)
-            : _buildSlider(size, theme),
+            ? _buildOnlineStatus(theme, isDark)
+            : _buildSlider(size, theme, isDark),
       ),
     );
   }
 
-  Widget _buildOnlineStatus(ThemeData theme) {
+  Widget _buildOnlineStatus(ThemeData theme, bool isDark) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Row(
@@ -90,18 +91,19 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
+                  Text(
                     'You\'re Online',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
                   Text(
                     'Ready to accept trips',
                     style: TextStyle(
                       fontSize: 14,
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
                     ),
                   ),
                 ],
@@ -110,6 +112,9 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
           ),
           TextButton(
             onPressed: () => widget.onChanged(false),
+            style: TextButton.styleFrom(
+              foregroundColor: isDark ? Colors.white : Colors.black,
+            ),
             child: const Text('Go Offline'),
           ),
         ],
@@ -118,119 +123,115 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
   }
 
   Widget _buildSlider(Size size, ThemeData theme) {
-    const sliderHeight = 60.0; // Reduced from 70
-    const thumbSize = 50.0; // Reduced from 60
+    const sliderHeight = 60.0;
+    const thumbSize = 50.0;
     final maxDrag = size.width - 48 - thumbSize;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20), // Reduced vertical padding
       child: Stack(
         children: [
-          // Background track
-          Container(
-            height: sliderHeight,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.grey.shade200,
-                  Colors.grey.shade300,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: Center(
-              child: AnimatedBuilder(
-                animation: _pulseAnimation,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: _isDragging ? 1.0 : _pulseAnimation.value,
-                    child: Text(
-                      'Slide to go online',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-
-          // Animated fill
-          AnimatedContainer(
-            duration: _isDragging
-                ? Duration.zero
-                : const Duration(milliseconds: 300),
-            height: sliderHeight,
-            width: _dragPosition + thumbSize,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [
-                  Color(0xFF4CAF50),
-                  Color(0xFF66BB6A),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(30),
-            ),
-          ),
-
-          // Draggable thumb
-          AnimatedPositioned(
-            duration: _isDragging
-                ? Duration.zero
-                : const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-            left: _dragPosition,
-            top: (sliderHeight - thumbSize) / 2,
-            child: GestureDetector(
-              onHorizontalDragStart: (_) {
-                setState(() => _isDragging = true);
-              },
-              onHorizontalDragUpdate: (details) {
-                setState(() {
-                  _dragPosition = (_dragPosition + details.delta.dx)
-                      .clamp(0.0, maxDrag);
-                });
-              },
-              onHorizontalDragEnd: (_) {
-                if (_dragPosition > maxDrag * 0.8) {
-                  widget.onChanged(true);
-                  setState(() {
-                    _dragPosition = 0;
-                    _isDragging = false;
-                  });
-                } else {
-                  setState(() {
-                    _dragPosition = 0;
-                    _isDragging = false;
-                  });
-                }
-              },
-              child: Container(
-                width: thumbSize,
-                height: thumbSize,
+          Stack(
+            children: [
+              // Background track
+              Container(
+                height: sliderHeight,
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+                  color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(35),
                 ),
-                child: Icon(
-                  Icons.chevron_right,
-                  color: _dragPosition > maxDrag * 0.5
-                      ? Colors.green
-                      : Colors.grey.shade600,
-                  size: 28,
+                child: Center(
+                  child: AnimatedBuilder(
+                    animation: _pulseAnimation,
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: _isDragging ? 1.0 : _pulseAnimation.value,
+                        child: Text(
+                          'Slide to go online',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.grey[500] : Colors.grey[600],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
+
+              // Animated fill based on drag
+              AnimatedContainer(
+                duration: _isDragging
+                    ? Duration.zero
+                    : const Duration(milliseconds: 300),
+                height: sliderHeight,
+                width: _dragPosition + thumbSize,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white : Colors.black,
+                  borderRadius: BorderRadius.circular(35),
+                ),
+              ),
+
+              // Draggable thumb
+              AnimatedPositioned(
+                duration: _isDragging
+                    ? Duration.zero
+                    : const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+                left: _dragPosition,
+                top: (sliderHeight - thumbSize) / 2,
+                child: GestureDetector(
+                  onHorizontalDragStart: (_) {
+                    setState(() => _isDragging = true);
+                  },
+                  onHorizontalDragUpdate: (details) {
+                    setState(() {
+                      _dragPosition = (_dragPosition + details.delta.dx)
+                          .clamp(0.0, maxDrag);
+                    });
+                  },
+                  onHorizontalDragEnd: (_) {
+                    if (_dragPosition > maxDrag * 0.8) {
+                      // Completed - go online
+                      widget.onChanged(true);
+                      setState(() {
+                        _dragPosition = 0;
+                        _isDragging = false;
+                      });
+                    } else {
+                      // Not completed - reset
+                      setState(() {
+                        _dragPosition = 0;
+                        _isDragging = false;
+                      });
+                    }
+                  },
+                  child: Container(
+                    width: thumbSize,
+                    height: thumbSize,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.chevron_right,
+                      color: _dragPosition > maxDrag * 0.5
+                          ? (isDark ? Colors.white : Colors.black)
+                          : Colors.grey.shade600,
+                      size: 32,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
