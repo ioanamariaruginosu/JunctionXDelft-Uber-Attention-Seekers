@@ -6,9 +6,9 @@ import lombok.Data;
 public class TripAnalysisRequest {
     private double profitabilityScore;
     private double totalEarnings;
-    private int estimatedDuration; // in minutes
-    private double distance; // in miles or km
-    private Double surgeMultiplier; // nullable
+    private int estimatedDuration;
+    private double distance;
+    private Double surgeMultiplier;
     private String pickupLocation;
     private String dropoffLocation;
     private String pickupLat;
