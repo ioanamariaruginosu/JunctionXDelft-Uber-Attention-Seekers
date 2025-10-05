@@ -25,7 +25,7 @@ class PopupSystem extends StatelessWidget {
         return AnimatedPositioned(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutBack,
-          bottom: mascotBottom + mascotSize + (index * 120.0), // always above mascot
+          bottom: mascotBottom + mascotSize + (index * 120.0), 
           left: 16,
           right: 16,
           child: NotificationPopup(
