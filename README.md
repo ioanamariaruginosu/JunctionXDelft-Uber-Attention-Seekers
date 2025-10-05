@@ -75,7 +75,12 @@ cd uber-copilot
 flutter pub get
 ```
 
-### 3. Run the App
+### 3. Generate platform folders
+```bash
+flutter create .
+```
+
+### 4. Run the App
 
 #### For Web
 ```bash
