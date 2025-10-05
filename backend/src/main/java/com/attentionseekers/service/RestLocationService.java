@@ -18,9 +18,6 @@ public class RestLocationService {
     private final List<RestLocation> locations;
 
     public RestLocationService(ObjectMapper mapper) throws IOException {
-        // Try multiple candidate locations so the service works whether the working
-        // directory is the repo root, the backend module root, or when the file is
-        // packaged on the classpath.
         File candidate = new File("./backend/src/data/rest_locations.json");
         if (!candidate.exists()) candidate = new File("./src/data/rest_locations.json");
         if (!candidate.exists()) candidate = new File("./src/main/resources/data/rest_locations.json");
@@ -29,7 +26,6 @@ public class RestLocationService {
         if (candidate.exists()) {
             data = mapper.readValue(candidate, FeatureCollection.class);
         } else {
-            // try loading from classpath
             InputStream is = getClass().getClassLoader().getResourceAsStream("rest_locations.json");
             if (is == null) {
                 is = getClass().getClassLoader().getResourceAsStream("data/rest_locations.json");
@@ -40,7 +36,6 @@ public class RestLocationService {
         }
 
         if (data == null) {
-            // file not found on disk or classpath - disable locations gracefully
             this.locations = Collections.emptyList();
             return;
         }
