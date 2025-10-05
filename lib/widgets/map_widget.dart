@@ -5,8 +5,10 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import 'package:geolocator/geolocator.dart';
 import 'dart:math' as math;
+import 'package:provider/provider.dart'; // NEW
 
 import '../utils/api_client.dart';
+import '../services/notification_service.dart'; // to watch showRestPins
 
 class DemandZone {
   final LatLng center;
@@ -233,6 +235,8 @@ class _RealMapWidgetState extends State<RealMapWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final showRestPins = context.watch<NotificationService>().showRestPins;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -315,65 +319,61 @@ class _RealMapWidgetState extends State<RealMapWidget> {
                 }).toList(),
               ),
 
-              // Rest location markers - with better visibility
-              MarkerLayer(
-                markers: _restLocations.map((location) {
-                  print('Creating marker at: ${location.latitude}, ${location.longitude} - ${location.name}');
-                  return Marker(
-                    point: LatLng(location.latitude, location.longitude),
-                    width: 80,
-                    height: 80,
-                    alignment: Alignment.topCenter,
-                    child: GestureDetector(
-                      onTap: () {
-                        print('Tapped rest location: ${location.name}');
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(location.name),
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-                      },
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.deepPurple,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 3,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.5),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 3),
+              // Rest location markers - ONLY when wellness reminder is active
+              if (showRestPins)
+                MarkerLayer(
+                  markers: _restLocations.map((location) {
+                    return Marker(
+                      point: LatLng(location.latitude, location.longitude),
+                      width: 80,
+                      height: 80,
+                      alignment: Alignment.topCenter,
+                      child: GestureDetector(
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(location.name),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.deepPurple,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 3,
                                 ),
-                              ],
-                            ),
-                            child: const Text(
-                              'Zzz',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.5),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: const Text(
+                                'Zzz',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
-                          // Small triangle pointer
-                          CustomPaint(
-                            size: const Size(16, 8),
-                            painter: TrianglePainter(Colors.deepPurple),
-                          ),
-                        ],
+                            // Small triangle pointer
+                            const _ZzzTriangle(),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                }).toList(),
-              ),
+                    );
+                  }).toList(),
+                ),
 
               // Current location marker
               if (!_isLoadingLocation)
@@ -475,6 +475,18 @@ class _RealMapWidgetState extends State<RealMapWidget> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ZzzTriangle extends StatelessWidget {
+  const _ZzzTriangle();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: const Size(16, 8),
+      painter: TrianglePainter(Colors.deepPurple),
     );
   }
 }

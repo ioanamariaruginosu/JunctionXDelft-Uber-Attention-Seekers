@@ -2,6 +2,9 @@ package com.attentionseekers.service;
 
 import com.attentionseekers.dto.DemandResponse;
 import com.attentionseekers.dto.ZoneDemandDto;
+import com.attentionseekers.dto.DriverDemandDto;
+import com.attentionseekers.service.DemandCalculator;
+import com.attentionseekers.service.UserType;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -42,37 +45,26 @@ public class DemandService {
     public DemandResponse getCurrentDemand() {
         ZonedDateTime now = ZonedDateTime.now(zoneId);
         DemandBucket bucket = DemandBucket.from(now.toLocalTime());
-<<<<<<< HEAD
-        return buildResponse(bucket, "now");
-=======
-        return buildResponse(bucket, "now", userType, -1);
->>>>>>> 31058a6 (change demand-works with hour and city)
+        return buildResponse(bucket, "now", UserType.RIDER, -1);
     }
 
     public DemandResponse getNext2HoursDemand() {
         ZonedDateTime future = ZonedDateTime.now(zoneId).plusHours(2);
         DemandBucket bucket = DemandBucket.from(future.toLocalTime());
-<<<<<<< HEAD
-        return buildResponse(bucket, "next2h");
-    }
-
-    public DemandResponse getDemandForBucket(DemandBucket bucket) {
-        return buildResponse(bucket, bucket.getLabel());
-    }
-
-    private DemandResponse buildResponse(DemandBucket bucket, String label) {
-        Map<String, Double> rides = dataLoader.ridesFor(bucket);
-        Map<String, Double> eats = dataLoader.eatsFor(bucket);
-=======
-        return buildResponse(bucket, "next2h", userType, -1);
-    }
-
-    public DemandResponse getNext2HoursDemand() {
-        return getNext2HoursDemand(UserType.RIDER);
+        return buildResponse(bucket, "next2h", UserType.RIDER, -1);
     }
 
     public DemandResponse getDemandForBucket(DemandBucket bucket, UserType userType) {
         return buildResponse(bucket, bucket.getLabel(), userType, -1);
+    }
+
+    // convenience overloads used by controllers
+    public DemandResponse getCurrentDemand(UserType userType) {
+        return getCurrentDemand(userType, -1);
+    }
+
+    public DemandResponse getNext2HoursDemand(UserType userType) {
+        return getNext2HoursDemand(userType, -1);
     }
 
     public DemandResponse getCurrentDemand(UserType userType, int cityId) {
@@ -105,7 +97,6 @@ public class DemandService {
         Map<String, Double> eats = new LinkedHashMap<>();
         rides.put(key, ridesSignal);
         eats.put(key, eatsSignal);
->>>>>>> 31058a6 (change demand-works with hour and city)
 
         Map<String, DemandCalculator.ZoneDemand> calculations = DemandCalculator.calculateDemand(
                 rides,
@@ -117,17 +108,20 @@ public class DemandService {
                 null,
                 userType == UserType.RIDER ? DemandCalculator.UserType.RIDER : DemandCalculator.UserType.FOOD
         );
-
-        Map<String, DriverDemandDto> out = new LinkedHashMap<>();
+        Map<String, ZoneDemandDto> out = new LinkedHashMap<>();
         DemandCalculator.ZoneDemand d = calculations.get(key);
         if (d == null) {
-            out.put(key, new DriverDemandDto(0.0, "low", "rest"));
+            out.put(key, new ZoneDemandDto(0.0, "low", 0.0, "low", "stay"));
         } else {
-            double score = userType == UserType.RIDER ? d.getRidesScore() : d.getEatsScore();
-            String level = userType == UserType.RIDER ? d.getRidesLevel() : d.getEatsLevel();
-            out.put(key, new DriverDemandDto(score, level, actionFor(level)));
+            out.put(key, new ZoneDemandDto(
+                    d.getRidesScore(),
+                    d.getRidesLevel(),
+                    d.getEatsScore(),
+                    d.getEatsLevel(),
+                    d.getRecommendation()
+            ));
         }
-        return new DemandResponse(Instant.now(), label, userType, out);
+        return new DemandResponse(Instant.now(), label, out);
     }
 
     private DemandResponse buildResponse(DemandBucket bucket, String label, UserType userType, int cityId) {
@@ -162,16 +156,20 @@ public class DemandService {
             userType == UserType.RIDER ? DemandCalculator.UserType.RIDER : DemandCalculator.UserType.FOOD
         );
 
-            Map<String, DriverDemandDto> out = new LinkedHashMap<>();
+            Map<String, ZoneDemandDto> out = new LinkedHashMap<>();
             DemandCalculator.ZoneDemand d = calculations.get(key);
             if (d == null) {
-                out.put(key, new DriverDemandDto(0.0, "low", "rest"));
+                out.put(key, new ZoneDemandDto(0.0, "low", 0.0, "low", "stay"));
             } else {
-                double score = userType == UserType.RIDER ? d.getRidesScore() : d.getEatsScore();
-                String level = userType == UserType.RIDER ? d.getRidesLevel() : d.getEatsLevel();
-                out.put(key, new DriverDemandDto(score, level, actionFor(level)));
+                out.put(key, new ZoneDemandDto(
+                        d.getRidesScore(),
+                        d.getRidesLevel(),
+                        d.getEatsScore(),
+                        d.getEatsLevel(),
+                        d.getRecommendation()
+                ));
             }
-            return new DemandResponse(Instant.now(), label, userType, out);
+            return new DemandResponse(Instant.now(), label, out);
         }
 
         // Fallback: compute per-zone demand using existing hex/zone aggregation
@@ -197,7 +195,7 @@ public class DemandService {
         userType == UserType.RIDER ? DemandCalculator.UserType.RIDER : DemandCalculator.UserType.FOOD
     );
 
-        Map<String, DriverDemandDto> zones = new LinkedHashMap<>();
+    Map<String, ZoneDemandDto> zones = new LinkedHashMap<>();
         for (String zone : dataLoader.zones()) {
             DemandCalculator.ZoneDemand demand = calculations.get(zone);
             if (demand == null) {
