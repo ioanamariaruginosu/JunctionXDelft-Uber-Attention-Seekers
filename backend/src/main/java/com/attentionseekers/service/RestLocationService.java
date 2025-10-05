@@ -57,6 +57,8 @@ public class RestLocationService {
                     );
                 })
                 .collect(Collectors.toList());
+
+        System.out.println(locations.stream().limit(10).collect(Collectors.toList()));
     }
 
     public List<RestLocation> findClosest(double lat, double lon, int limit) {
