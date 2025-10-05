@@ -1,4 +1,3 @@
-// lib/services/rest_timer_service.dart
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -34,7 +33,6 @@ class RestTimerService extends ChangeNotifier {
     this.demoMode = false,
     this.demoSecondsPerMinute = 1,
   }) {
-    // bootstrap
     syncWithServer();
   }
 
@@ -71,16 +69,16 @@ class RestTimerService extends ChangeNotifier {
         todayMinutes = (body['totalContinuousToday'] ?? 0) as int; // choose the best match for 'today'
         // if you prefer driving minutes, pick 'driving' or 'totalDrivingToday'
 
-        // define active if continuous > 0 (or modify if backend provides explicit active flag)
+        // define active if continuous > 0
         activeSession = continuousMinutes > 0;
 
-        // immediate threshold evaluation (e.g., app opened after threshold passed)
+        // immediate threshold evaluation 
         _checkThresholdsAndAlert(forceNotify: true);
 
         if (activeSession) startLocalTimer();
         else {
           stopLocalTimer();
-          // reset fired-alerts when session stops (optional)
+          // reset fired-alerts when session stops
           _alert105Fired = false;
           _alert120Fired = false;
         }
