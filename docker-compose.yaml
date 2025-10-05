@@ -4,11 +4,8 @@ services:
     container_name: seekers-prep
     working_dir: /app
     volumes:
-      # mount the actual folder that contains the script
       - ./tools/ingest:/app:ro
-      # put your Excel file here: ./data/uber_hackathon_v2_mock_data.xlsx
       - ./data:/data:ro
-      # where the CSV should be written so Postgres can read it on init
       - ./docker/db/init:/out
     command: >
       bash -lc "pip install --no-cache-dir pandas openpyxl &&
@@ -24,7 +21,6 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      # This must contain 01_schema.sql, 02_load_jobs_like.sql, and (after prep) jobs_like.csv
       - ./docker/db/init:/docker-entrypoint-initdb.d:ro
       - db-data:/var/lib/postgresql/data
     healthcheck:
