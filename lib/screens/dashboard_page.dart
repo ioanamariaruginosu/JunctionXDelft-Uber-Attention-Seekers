@@ -12,6 +12,8 @@ import '../widgets/map_widget.dart';
 import '../widgets/popup_system.dart';
 import '../utils/theme.dart';
 import '../widgets/slide_to_go_online.dart';
+import '../widgets/phone_demand_card.dart';
+
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({Key? key}) : super(key: key);
@@ -88,6 +90,17 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
         children: [
           _buildMapInterface(),
           _buildTopBar(context, authService, mockData),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 72,
+            left: 0,
+            right: 0,
+            child: PhoneDemandCard(
+              userType: 'food',               // or from user settings
+              cityId: 4,                      // your driver’s city
+              at: DateTime.now(),             // optional; defaults to now()
+              //at: DateTime.parse("2023-01-16T19:00:00Z")
+            ),
+          ),
           if (mockData.currentTripRequest != null) _buildTripRequestCard(context, mockData, maskotService, session),
           if (mockData.activeTrip != null) _buildActiveTripCard(context, mockData),
           const MascotWidget(),
