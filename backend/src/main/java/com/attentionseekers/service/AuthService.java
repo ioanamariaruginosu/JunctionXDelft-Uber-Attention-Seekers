@@ -63,34 +63,30 @@ public class AuthService {
     public RegisterResponse registerUser(RegisterRequest request) throws Exception {
         List<User> users = readUsers();
 
-        // Check if email already exists
         boolean emailExists = users.stream()
                 .anyMatch(u -> u.getEmail().equalsIgnoreCase(request.getEmail()));
         if (emailExists) {
             throw new Exception("Email already registered");
         }
 
-        // Check if phone number already exists
         boolean phoneExists = users.stream()
                 .anyMatch(u -> u.getPhoneNumber().equals(request.getPhoneNumber()));
         if (phoneExists) {
             throw new Exception("Phone number already registered");
         }
 
-        // Check if license number already exists
         boolean licenseExists = users.stream()
                 .anyMatch(u -> u.getLicenseNumber().equals(request.getLicenseNumber()));
         if (licenseExists) {
             throw new Exception("License number already registered");
         }
 
-        // Create new user
         User newUser = new User();
         newUser.setId(UUID.randomUUID().toString());
         newUser.setFullName(request.getFullName());
         newUser.setEmail(request.getEmail());
         newUser.setPhoneNumber(request.getPhoneNumber());
-        newUser.setPassword(hashPassword(request.getPassword())); // Hash password
+        newUser.setPassword(hashPassword(request.getPassword()));
         newUser.setVehicleType(request.getVehicleType());
         newUser.setLicenseNumber(request.getLicenseNumber());
         newUser.setRating(5.0);
