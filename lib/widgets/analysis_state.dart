@@ -23,7 +23,6 @@ class _MaskotAnalysisState extends State<MaskotAnalysis> {
   @override
   void initState() {
     super.initState();
-    // Call the API only ONCE when widget is created
     _analysisFuture = widget.maskotService.analyzeTripRequest(widget.trip);
   }
 
@@ -32,7 +31,7 @@ class _MaskotAnalysisState extends State<MaskotAnalysis> {
     final theme = Theme.of(context);
 
     return FutureBuilder<String>(
-      future: _analysisFuture, // Reuse the same Future
+      future: _analysisFuture, 
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Container(
