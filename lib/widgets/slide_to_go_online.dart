@@ -14,7 +14,8 @@ class SlideToGoOnline extends StatefulWidget {
   State<SlideToGoOnline> createState() => _SlideToGoOnlineState();
 }
 
-class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProviderStateMixin {
+class _SlideToGoOnlineState extends State<SlideToGoOnline>
+    with SingleTickerProviderStateMixin {
   double _dragPosition = 0;
   bool _isDragging = false;
   late AnimationController _pulseController;
@@ -92,7 +93,7 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'You\'re Online',
+                    "You're Online",
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -122,38 +123,23 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
     );
   }
 
-<<<<<<< HEAD
   Widget _buildSlider(Size size, ThemeData theme, bool isDark) {
-    const sliderHeight = 70.0;
-    const thumbSize = 60.0;
-=======
-<<<<<<< HEAD
-  Widget _buildSlider(Size size, ThemeData theme) {
-    const sliderHeight = 60.0; // Reduced from 70
-    const thumbSize = 50.0; // Reduced from 60
-=======
-  Widget _buildSlider(Size size, ThemeData theme, bool isDark) {
-    const sliderHeight = 70.0;
-    const thumbSize = 60.0;
->>>>>>> 99aff08 (Changed colors to frontend to match uber app)
->>>>>>> 38c0af7 (fix: apply color changes)
+    const sliderHeight = 60.0;
+    const thumbSize = 50.0;
     final maxDrag = size.width - 48 - thumbSize;
 
     return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      child: Stack(
         children: [
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
           // Background track
           Container(
             height: sliderHeight,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Colors.grey.shade200,
-                  Colors.grey.shade300,
+                  isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
+                  isDark ? const Color(0xFF3A3A3A) : Colors.grey.shade300,
                 ],
               ),
               borderRadius: BorderRadius.circular(30),
@@ -169,89 +155,34 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade600,
+                        color:
+                            isDark ? Colors.grey[400] : Colors.grey.shade600,
                       ),
                     ),
                   );
                 },
-=======
->>>>>>> 38c0af7 (fix: apply color changes)
-          Stack(
-            children: [
-              // Background track
-              Container(
-                height: sliderHeight,
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(35),
-                ),
-                child: Center(
-                  child: AnimatedBuilder(
-                    animation: _pulseAnimation,
-                    builder: (context, child) {
-                      return Transform.scale(
-                        scale: _isDragging ? 1.0 : _pulseAnimation.value,
-                        child: Text(
-                          'Slide to go online',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.grey[500] : Colors.grey[600],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-<<<<<<< HEAD
-=======
->>>>>>> 99aff08 (Changed colors to frontend to match uber app)
->>>>>>> 38c0af7 (fix: apply color changes)
               ),
+            ),
+          ),
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
           // Animated fill
           AnimatedContainer(
-            duration: _isDragging
-                ? Duration.zero
-                : const Duration(milliseconds: 300),
+            duration:
+                _isDragging ? Duration.zero : const Duration(milliseconds: 300),
             height: sliderHeight,
             width: _dragPosition + thumbSize,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [
-                  Color(0xFF4CAF50),
-                  Color(0xFF66BB6A),
-                ],
-=======
->>>>>>> 38c0af7 (fix: apply color changes)
-              // Animated fill based on drag
-              AnimatedContainer(
-                duration: _isDragging
-                    ? Duration.zero
-                    : const Duration(milliseconds: 300),
-                height: sliderHeight,
-                width: _dragPosition + thumbSize,
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white : Colors.black,
-                  borderRadius: BorderRadius.circular(35),
-                ),
-<<<<<<< HEAD
-=======
->>>>>>> 99aff08 (Changed colors to frontend to match uber app)
->>>>>>> 38c0af7 (fix: apply color changes)
+                colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)],
               ),
+              borderRadius: BorderRadius.circular(30),
+            ),
+          ),
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
           // Draggable thumb
           AnimatedPositioned(
-            duration: _isDragging
-                ? Duration.zero
-                : const Duration(milliseconds: 300),
+            duration:
+                _isDragging ? Duration.zero : const Duration(milliseconds: 300),
             curve: Curves.easeOut,
             left: _dragPosition,
             top: (sliderHeight - thumbSize) / 2,
@@ -261,23 +192,18 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
               },
               onHorizontalDragUpdate: (details) {
                 setState(() {
-                  _dragPosition = (_dragPosition + details.delta.dx)
-                      .clamp(0.0, maxDrag);
+                  _dragPosition =
+                      (_dragPosition + details.delta.dx).clamp(0.0, maxDrag);
                 });
               },
               onHorizontalDragEnd: (_) {
                 if (_dragPosition > maxDrag * 0.8) {
                   widget.onChanged(true);
-                  setState(() {
-                    _dragPosition = 0;
-                    _isDragging = false;
-                  });
-                } else {
-                  setState(() {
-                    _dragPosition = 0;
-                    _isDragging = false;
-                  });
                 }
+                setState(() {
+                  _dragPosition = 0;
+                  _isDragging = false;
+                });
               },
               child: Container(
                 width: thumbSize,
@@ -290,78 +216,18 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
                       color: Colors.black.withOpacity(0.2),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
-=======
->>>>>>> 38c0af7 (fix: apply color changes)
-              // Draggable thumb
-              AnimatedPositioned(
-                duration: _isDragging
-                    ? Duration.zero
-                    : const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-                left: _dragPosition,
-                top: (sliderHeight - thumbSize) / 2,
-                child: GestureDetector(
-                  onHorizontalDragStart: (_) {
-                    setState(() => _isDragging = true);
-                  },
-                  onHorizontalDragUpdate: (details) {
-                    setState(() {
-                      _dragPosition = (_dragPosition + details.delta.dx)
-                          .clamp(0.0, maxDrag);
-                    });
-                  },
-                  onHorizontalDragEnd: (_) {
-                    if (_dragPosition > maxDrag * 0.8) {
-                      // Completed - go online
-                      widget.onChanged(true);
-                      setState(() {
-                        _dragPosition = 0;
-                        _isDragging = false;
-                      });
-                    } else {
-                      // Not completed - reset
-                      setState(() {
-                        _dragPosition = 0;
-                        _isDragging = false;
-                      });
-                    }
-                  },
-                  child: Container(
-                    width: thumbSize,
-                    height: thumbSize,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-<<<<<<< HEAD
-=======
                     ),
-                    child: Icon(
-                      Icons.chevron_right,
-                      color: _dragPosition > maxDrag * 0.5
-                          ? (isDark ? Colors.white : Colors.black)
-                          : Colors.grey.shade600,
-                      size: 32,
->>>>>>> 99aff08 (Changed colors to frontend to match uber app)
->>>>>>> 38c0af7 (fix: apply color changes)
-                    ),
-                    child: Icon(
-                      Icons.chevron_right,
-                      color: _dragPosition > maxDrag * 0.5
-                          ? (isDark ? Colors.white : Colors.black)
-                          : Colors.grey.shade600,
-                      size: 32,
-                    ),
-                  ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.chevron_right,
+                  color: _dragPosition > maxDrag * 0.5
+                      ? Colors.green
+                      : Colors.grey.shade600,
+                  size: 28,
                 ),
               ),
-            ],
+            ),
           ),
         ],
       ),
