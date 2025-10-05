@@ -2,14 +2,12 @@ package com.attentionseekers.service;
 
 import com.attentionseekers.model.SessionInfo;
 import com.attentionseekers.model.SessionPeriod;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-
-import java.io.File;
-import java.io.IOException;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,52 +16,87 @@ import java.util.concurrent.ConcurrentHashMap;
 public class HoursService {
 
     private final Map<String, SessionInfo> userSessions = new ConcurrentHashMap<>();
-    private static final String SESSION_DIR = "sessions";
 
-    private final ObjectMapper objectMapper;
     private final SessionService sessionService;
+    private final JdbcTemplate jdbc;
 
-    // Prefer constructor injection in Spring
-    public HoursService(SessionService sessionService, ObjectMapper objectMapper) {
-        this.sessionService = sessionService != null ? sessionService : new SessionService();
-        // Ensure JavaTime (LocalDateTime) is supported even if a plain ObjectMapper is injected
-        this.objectMapper = (objectMapper != null ? objectMapper.copy() : new ObjectMapper())
-                .registerModule(new JavaTimeModule())
-                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    public HoursService(SessionService sessionService, JdbcTemplate jdbc) {
+        this.sessionService = (sessionService != null ? sessionService : new SessionService());
+        this.jdbc = jdbc;
     }
 
-    /* ===================== Persistence helpers ===================== */
+    /* ===================== Persistence helpers (DB instead of JSON) ===================== */
 
-    private void saveSessionInfo(String userId, SessionInfo info) {
-        File dir = new File(SESSION_DIR);
-        if (!dir.exists()) dir.mkdirs();
+    /**
+     * Persist a full snapshot: delete all rows for the user and re-insert
+     * closed sessions + one open session (if any).
+     * Simple and robust; fine for our scale.
+     */
+    @Transactional
+    protected void saveSessionInfo(String userId, SessionInfo info) {
+        // Remove any previous rows for this user's history
+        jdbc.update("DELETE FROM demand.hours_session WHERE user_id = ?", userId);
 
-        File file = new File(dir, userId + ".json");
-        try {
-            objectMapper.writeValue(file, SessionSnapshot.from(info));
-        } catch (IOException e) {
-            // TODO: log error
-        }
-    }
-
-    private SessionInfo loadSessionInfo(String userId) {
-        File file = new File(SESSION_DIR, userId + ".json");
-        if (file.exists()) {
-            try {
-                SessionSnapshot snap = objectMapper.readValue(file, SessionSnapshot.class);
-                return snap.toModel();
-            } catch (IOException e) {
-                // TODO: log error
+        // Insert closed sessions
+        for (SessionPeriod p : info.getSessions()) {
+            // guard: only persist closed sessions
+            if (p.getEnd() != null) {
+                jdbc.update(
+                    "INSERT INTO demand.hours_session (user_id, started_at, ended_at) VALUES (?,?,?)",
+                    userId,
+                    Timestamp.valueOf(p.getStart()),
+                    Timestamp.valueOf(p.getEnd())
+                );
             }
         }
-        return new SessionInfo();
+
+        // Insert open session if exists
+        LocalDateTime openStart = info.getCurrentSessionStart();
+        if (openStart != null) {
+            jdbc.update(
+                "INSERT INTO demand.hours_session (user_id, started_at, ended_at) VALUES (?,?,NULL)",
+                userId,
+                Timestamp.valueOf(openStart)
+            );
+        }
+    }
+
+    /**
+     * Rebuild SessionInfo from DB rows.
+     * - closed rows -> SessionPeriod(start,end)
+     * - one open row (ended_at NULL) -> currentSessionStart
+     */
+    protected SessionInfo loadSessionInfo(String userId) {
+        SessionInfo info = new SessionInfo();
+
+        // Load all rows for the user
+        jdbc.query(
+            "SELECT started_at, ended_at " +
+            "  FROM demand.hours_session " +
+            " WHERE user_id = ? " +
+            " ORDER BY started_at ASC",
+            rs -> {
+                LocalDateTime start = rs.getTimestamp("started_at").toLocalDateTime();
+                Timestamp endedTs = rs.getTimestamp("ended_at");
+                if (endedTs == null) {
+                    // open session
+                    info.setCurrentSessionStart(start);
+                } else {
+                    LocalDateTime end = endedTs.toLocalDateTime();
+                    info.addSession(new SessionPeriod(start, end));
+                }
+            },
+            userId
+        );
+
+        return info;
     }
 
     private SessionInfo getSessionInfo(String userId) {
         return userSessions.computeIfAbsent(userId, this::loadSessionInfo);
     }
 
-    /* ===================== Public API ===================== */
+    /* ===================== Public API (unchanged) ===================== */
 
     public void startSession(String userId) {
         SessionInfo info = getSessionInfo(userId);
@@ -86,12 +119,12 @@ public class HoursService {
     }
 
     public int getDrivingMinutes(String userId) {
-        // Implement driving minutes logic per user if needed
+        // Keep as-is for now
         return 0;
     }
 
     public int getTotalDrivingMinutesToday(String userId) {
-        // Implement total driving minutes today logic per user if needed
+        // Keep as-is for now
         return 0;
     }
 
@@ -99,36 +132,7 @@ public class HoursService {
         return getSessionInfo(userId).hasOngoingSession();
     }
 
-    public java.time.LocalDateTime getCurrentSessionStart(String userId) {
+    public LocalDateTime getCurrentSessionStart(String userId) {
         return getSessionInfo(userId).getCurrentSessionStart();
-    }
-
-
-    /* ===================== DTO for persistence ===================== */
-    /**
-     * Snapshot DTO so we can persist SessionInfo cleanly without exposing setters
-     * on the domain model. This avoids Jackson trouble with unmodifiable lists.
-     */
-    private static class SessionSnapshot {
-        public java.util.List<SessionPeriod> sessions = new java.util.ArrayList<>();
-        public LocalDateTime currentSessionStart;
-
-        static SessionSnapshot from(SessionInfo info) {
-            SessionSnapshot s = new SessionSnapshot();
-            s.sessions.addAll(info.getSessions());
-            s.currentSessionStart = info.getCurrentSessionStart();
-            return s;
-        }
-
-        SessionInfo toModel() {
-            SessionInfo m = new SessionInfo();
-            if (currentSessionStart != null) {
-                m.setCurrentSessionStart(currentSessionStart);
-            }
-            for (SessionPeriod p : sessions) {
-                m.addSession(p);
-            }
-            return m;
-        }
     }
 }
