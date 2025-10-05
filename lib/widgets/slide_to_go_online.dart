@@ -43,6 +43,7 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Positioned(
       bottom: 0,
@@ -52,10 +53,10 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
         duration: const Duration(milliseconds: 300),
         height: widget.isOnline ? 80 : 140,
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
+          color: isDark ? const Color(0xFF1F1F1F) : Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -63,13 +64,13 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: widget.isOnline
-            ? _buildOnlineStatus(theme)
-            : _buildSlider(size, theme),
+            ? _buildOnlineStatus(theme, isDark)
+            : _buildSlider(size, theme, isDark),
       ),
     );
   }
 
-  Widget _buildOnlineStatus(ThemeData theme) {
+  Widget _buildOnlineStatus(ThemeData theme, bool isDark) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Row(
@@ -90,18 +91,19 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
+                  Text(
                     'You\'re Online',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
                   Text(
                     'Ready to accept trips',
                     style: TextStyle(
                       fontSize: 14,
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
                     ),
                   ),
                 ],
@@ -110,6 +112,9 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
           ),
           TextButton(
             onPressed: () => widget.onChanged(false),
+            style: TextButton.styleFrom(
+              foregroundColor: isDark ? Colors.white : Colors.black,
+            ),
             child: const Text('Go Offline'),
           ),
         ],
@@ -117,7 +122,7 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
     );
   }
 
-  Widget _buildSlider(Size size, ThemeData theme) {
+  Widget _buildSlider(Size size, ThemeData theme, bool isDark) {
     const sliderHeight = 70.0;
     const thumbSize = 60.0;
     final maxDrag = size.width - 48 - thumbSize;
@@ -132,12 +137,7 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
               Container(
                 height: sliderHeight,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.grey.shade200,
-                      Colors.grey.shade300,
-                    ],
-                  ),
+                  color: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade200,
                   borderRadius: BorderRadius.circular(35),
                 ),
                 child: Center(
@@ -151,7 +151,7 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade600,
+                            color: isDark ? Colors.grey[500] : Colors.grey[600],
                           ),
                         ),
                       );
@@ -168,12 +168,7 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
                 height: sliderHeight,
                 width: _dragPosition + thumbSize,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF4CAF50),
-                      Color(0xFF66BB6A),
-                    ],
-                  ),
+                  color: isDark ? Colors.white : Colors.black,
                   borderRadius: BorderRadius.circular(35),
                 ),
               ),
@@ -229,7 +224,7 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
                     child: Icon(
                       Icons.chevron_right,
                       color: _dragPosition > maxDrag * 0.5
-                          ? Colors.green
+                          ? (isDark ? Colors.white : Colors.black)
                           : Colors.grey.shade600,
                       size: 32,
                     ),

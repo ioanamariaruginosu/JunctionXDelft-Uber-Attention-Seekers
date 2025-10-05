@@ -25,13 +25,23 @@ class _ProfilePageState extends State<ProfilePage> {
     final authService = context.watch<AuthService>();
     final maskotService = context.watch<MaskotAIService>();
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = isDark ? Colors.white : Colors.black;
+    final backgroundColor = isDark ? const Color(0xFF121212) : Colors.white;
+    final cardColor = isDark ? const Color(0xFF1F1F1F) : Colors.white;
     final user = authService.currentUser;
 
     return Scaffold(
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: const Text('Profile'),
+        backgroundColor: backgroundColor,
+        elevation: 0,
+        title: Text(
+          'Profile',
+          style: TextStyle(color: primaryColor),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: primaryColor),
           onPressed: () => context.pop(),
         ),
       ),
@@ -42,18 +52,20 @@ class _ProfilePageState extends State<ProfilePage> {
           children: [
             // Profile Header
             Card(
+              color: cardColor,
+              elevation: isDark ? 2 : 1,
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Row(
                   children: [
                     CircleAvatar(
                       radius: 40,
-                      backgroundColor: theme.colorScheme.primary,
+                      backgroundColor: primaryColor,
                       child: Text(
                         user?.fullName.substring(0, 1).toUpperCase() ?? 'U',
                         style: TextStyle(
                           fontSize: 32,
-                          color: theme.colorScheme.onPrimary,
+                          color: isDark ? Colors.black : Colors.white,
                         ),
                       ),
                     ),
@@ -64,13 +76,15 @@ class _ProfilePageState extends State<ProfilePage> {
                         children: [
                           Text(
                             user?.fullName ?? 'Demo User',
-                            style: AppTextStyles.headline4,
+                            style: AppTextStyles.headline4.copyWith(
+                              color: primaryColor,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             user?.email ?? 'demo@uber.com',
                             style: AppTextStyles.bodyMedium.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                              color: isDark ? Colors.grey[400] : Colors.grey[600],
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -82,14 +96,17 @@ class _ProfilePageState extends State<ProfilePage> {
                                 '${user?.rating ?? 4.9}',
                                 style: AppTextStyles.bodyMedium.copyWith(
                                   fontWeight: FontWeight.bold,
+                                  color: primaryColor,
                                 ),
                               ),
                               const SizedBox(width: 16),
-                              Icon(Icons.directions_car, color: theme.colorScheme.primary, size: 20),
+                              Icon(Icons.directions_car, color: primaryColor, size: 20),
                               const SizedBox(width: 4),
                               Text(
                                 '${user?.totalTrips ?? 342} trips',
-                                style: AppTextStyles.bodyMedium,
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: primaryColor,
+                                ),
                               ),
                             ],
                           ),
@@ -103,20 +120,29 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: 20),
 
             // Quick Stats Summary
-            _buildSummaryCards(mockData.todayEarnings),
+            _buildSummaryCards(mockData.todayEarnings, isDark, primaryColor, cardColor),
             const SizedBox(height: 20),
 
             // AI Assistant Toggle
             Card(
+              color: cardColor,
+              elevation: isDark ? 2 : 1,
               child: SwitchListTile(
                 title: Text(
-                  'Maskot AI Assistant',
+                  'Ube Assistant',
                   style: AppTextStyles.bodyLarge.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: primaryColor,
                   ),
                 ),
-                subtitle: const Text('Show helpful tips and earnings insights'),
+                subtitle: Text(
+                  'Show helpful tips and earnings insights',
+                  style: TextStyle(
+                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                  ),
+                ),
                 value: _maskotEnabled,
+                activeColor: primaryColor,
                 onChanged: (value) {
                   setState(() {
                     _maskotEnabled = value;
@@ -140,17 +166,26 @@ class _ProfilePageState extends State<ProfilePage> {
 
             // Statistics Toggle
             Card(
+              color: cardColor,
+              elevation: isDark ? 2 : 1,
               child: ListTile(
                 title: Text(
                   'Detailed Statistics',
                   style: AppTextStyles.bodyLarge.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: primaryColor,
                   ),
                 ),
-                subtitle: Text(_showStats ? 'Hide charts and analytics' : 'Show charts and analytics'),
+                subtitle: Text(
+                  _showStats ? 'Hide charts and analytics' : 'Show charts and analytics',
+                  style: TextStyle(
+                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                  ),
+                ),
                 trailing: Icon(
                   _showStats ? Icons.expand_less : Icons.expand_more,
                   size: 28,
+                  color: primaryColor,
                 ),
                 onTap: () {
                   setState(() {
@@ -160,12 +195,12 @@ class _ProfilePageState extends State<ProfilePage> {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.1),
+                    color: primaryColor.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.bar_chart,
-                    color: theme.colorScheme.primary,
+                    color: primaryColor,
                   ),
                 ),
               ),
@@ -177,15 +212,15 @@ class _ProfilePageState extends State<ProfilePage> {
               secondChild: Column(
                 children: [
                   const SizedBox(height: 20),
-                  _buildEarningsChart(mockData.todayEarnings),
+                  _buildEarningsChart(mockData.todayEarnings, isDark, primaryColor, cardColor),
                   const SizedBox(height: 20),
-                  _buildEarningsBreakdown(mockData.todayEarnings),
+                  _buildEarningsBreakdown(mockData.todayEarnings, isDark, primaryColor, cardColor),
                   const SizedBox(height: 20),
-                  _buildHourlyEarningsChart(mockData.todayEarnings),
+                  _buildHourlyEarningsChart(mockData.todayEarnings, isDark, primaryColor, cardColor),
                   const SizedBox(height: 20),
-                  _buildGoalsSection(mockData.todayEarnings),
+                  _buildGoalsSection(mockData.todayEarnings, isDark, primaryColor, cardColor),
                   const SizedBox(height: 20),
-                  _buildRecentTrips(mockData),
+                  _buildRecentTrips(mockData, isDark, primaryColor, cardColor),
                 ],
               ),
               crossFadeState: _showStats ? CrossFadeState.showSecond : CrossFadeState.showFirst,
@@ -197,7 +232,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildSummaryCards(EarningsModel? earnings) {
+  Widget _buildSummaryCards(EarningsModel? earnings, bool isDark, Color primaryColor, Color cardColor) {
     return Row(
       children: [
         Expanded(
@@ -206,6 +241,9 @@ class _ProfilePageState extends State<ProfilePage> {
             '\$${earnings?.totalEarnings.toStringAsFixed(2) ?? '0.00'}',
             Icons.attach_money,
             AppColors.success,
+            isDark,
+            primaryColor,
+            cardColor,
           ),
         ),
         const SizedBox(width: 12),
@@ -215,6 +253,9 @@ class _ProfilePageState extends State<ProfilePage> {
             '${earnings?.tripsCompleted ?? 0}',
             Icons.directions_car,
             AppColors.info,
+            isDark,
+            primaryColor,
+            cardColor,
           ),
         ),
         const SizedBox(width: 12),
@@ -224,16 +265,19 @@ class _ProfilePageState extends State<ProfilePage> {
             '\$${earnings?.earningsPerHour.toStringAsFixed(1) ?? '0.0'}',
             Icons.trending_up,
             AppColors.warning,
+            isDark,
+            primaryColor,
+            cardColor,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSummaryCard(String title, String value, IconData icon, Color color) {
-    final theme = Theme.of(context);
-
+  Widget _buildSummaryCard(String title, String value, IconData icon, Color color, bool isDark, Color primaryColor, Color cardColor) {
     return Card(
+      color: cardColor,
+      elevation: isDark ? 2 : 1,
       child: Container(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -251,7 +295,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Text(
               title,
               style: AppTextStyles.caption.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+                color: isDark ? Colors.grey[400] : Colors.grey[600],
               ),
               textAlign: TextAlign.center,
             ),
@@ -261,10 +305,12 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildEarningsChart(EarningsModel? earnings) {
+  Widget _buildEarningsChart(EarningsModel? earnings, bool isDark, Color primaryColor, Color cardColor) {
     if (earnings == null) return const SizedBox.shrink();
 
     return Card(
+      color: cardColor,
+      elevation: isDark ? 2 : 1,
       child: Container(
         padding: const EdgeInsets.all(16),
         height: 250,
@@ -275,6 +321,7 @@ class _ProfilePageState extends State<ProfilePage> {
               'Earnings Breakdown',
               style: AppTextStyles.bodyLarge.copyWith(
                 fontWeight: FontWeight.bold,
+                color: primaryColor,
               ),
             ),
             const SizedBox(height: 16),
@@ -338,10 +385,12 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildEarningsBreakdown(EarningsModel? earnings) {
+  Widget _buildEarningsBreakdown(EarningsModel? earnings, bool isDark, Color primaryColor, Color cardColor) {
     if (earnings == null) return const SizedBox.shrink();
 
     return Card(
+      color: cardColor,
+      elevation: isDark ? 2 : 1,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -351,22 +400,23 @@ class _ProfilePageState extends State<ProfilePage> {
               'Detailed Breakdown',
               style: AppTextStyles.bodyLarge.copyWith(
                 fontWeight: FontWeight.bold,
+                color: primaryColor,
               ),
             ),
             const SizedBox(height: 16),
-            _buildBreakdownRow('Base Fare', earnings.baseFare, AppColors.info),
-            _buildBreakdownRow('Tips', earnings.tips, AppColors.success),
-            _buildBreakdownRow('Bonuses', earnings.bonuses, AppColors.warning),
-            _buildBreakdownRow('Surge', earnings.surgeEarnings, AppColors.error),
+            _buildBreakdownRow('Base Fare', earnings.baseFare, AppColors.info, isDark, primaryColor),
+            _buildBreakdownRow('Tips', earnings.tips, AppColors.success, isDark, primaryColor),
+            _buildBreakdownRow('Bonuses', earnings.bonuses, AppColors.warning, isDark, primaryColor),
+            _buildBreakdownRow('Surge', earnings.surgeEarnings, AppColors.error, isDark, primaryColor),
             const Divider(height: 24),
-            _buildBreakdownRow('Total', earnings.totalEarnings, Theme.of(context).colorScheme.primary, isTotal: true),
+            _buildBreakdownRow('Total', earnings.totalEarnings, primaryColor, isDark, primaryColor, isTotal: true),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBreakdownRow(String label, double amount, Color color, {bool isTotal = false}) {
+  Widget _buildBreakdownRow(String label, double amount, Color color, bool isDark, Color primaryColor, {bool isTotal = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -385,24 +435,28 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(width: 8),
               Text(
                 label,
-                style: isTotal
+                style: (isTotal
                     ? AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold)
-                    : AppTextStyles.bodyMedium,
+                    : AppTextStyles.bodyMedium).copyWith(
+                  color: primaryColor,
+                ),
               ),
             ],
           ),
           Text(
             '\$${amount.toStringAsFixed(2)}',
-            style: isTotal
+            style: (isTotal
                 ? AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold)
-                : AppTextStyles.bodyMedium,
+                : AppTextStyles.bodyMedium).copyWith(
+              color: primaryColor,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHourlyEarningsChart(EarningsModel? earnings) {
+  Widget _buildHourlyEarningsChart(EarningsModel? earnings, bool isDark, Color primaryColor, Color cardColor) {
     if (earnings == null) return const SizedBox.shrink();
 
     final hourlyData = earnings.hourlyEarnings.entries.toList()
@@ -411,6 +465,8 @@ class _ProfilePageState extends State<ProfilePage> {
     if (hourlyData.isEmpty) return const SizedBox.shrink();
 
     return Card(
+      color: cardColor,
+      elevation: isDark ? 2 : 1,
       child: Container(
         padding: const EdgeInsets.all(16),
         height: 250,
@@ -421,6 +477,7 @@ class _ProfilePageState extends State<ProfilePage> {
               'Hourly Earnings',
               style: AppTextStyles.bodyLarge.copyWith(
                 fontWeight: FontWeight.bold,
+                color: primaryColor,
               ),
             ),
             const SizedBox(height: 16),
@@ -439,7 +496,10 @@ class _ProfilePageState extends State<ProfilePage> {
                           if (value.toInt() < hourlyData.length) {
                             return Text(
                               '${hourlyData[value.toInt()].key}:00',
-                              style: const TextStyle(fontSize: 10),
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                              ),
                             );
                           }
                           return const Text('');
@@ -452,7 +512,10 @@ class _ProfilePageState extends State<ProfilePage> {
                         getTitlesWidget: (value, meta) {
                           return Text(
                             '\$${value.toInt()}',
-                            style: const TextStyle(fontSize: 10),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: isDark ? Colors.grey[400] : Colors.grey[600],
+                            ),
                           );
                         },
                       ),
@@ -467,7 +530,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       barRods: [
                         BarChartRodData(
                           toY: entry.value.value,
-                          color: AppColors.success,
+                          color: primaryColor,
                           width: 16,
                           borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
                         ),
@@ -483,7 +546,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildGoalsSection(EarningsModel? earnings) {
+  Widget _buildGoalsSection(EarningsModel? earnings, bool isDark, Color primaryColor, Color cardColor) {
     final dailyGoal = 150.0;
     final weeklyGoal = 1000.0;
     final dailyProgress = (earnings?.totalEarnings ?? 0) / dailyGoal;
@@ -496,7 +559,9 @@ class _ProfilePageState extends State<ProfilePage> {
           earnings?.totalEarnings ?? 0,
           dailyGoal,
           dailyProgress,
-          AppColors.info,
+          primaryColor,
+          isDark,
+          cardColor,
         ),
         const SizedBox(height: 16),
         _buildGoalCard(
@@ -504,14 +569,18 @@ class _ProfilePageState extends State<ProfilePage> {
           650.0,
           weeklyGoal,
           weeklyProgress,
-          AppColors.success,
+          primaryColor,
+          isDark,
+          cardColor,
         ),
       ],
     );
   }
 
-  Widget _buildGoalCard(String title, double current, double target, double progress, Color color) {
+  Widget _buildGoalCard(String title, double current, double target, double progress, Color color, bool isDark, Color cardColor) {
     return Card(
+      color: cardColor,
+      elevation: isDark ? 2 : 1,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -524,6 +593,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   title,
                   style: AppTextStyles.bodyLarge.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: color,
                   ),
                 ),
                 Text(
@@ -549,7 +619,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Text(
               '\$${current.toStringAsFixed(2)} / \$${target.toStringAsFixed(2)}',
               style: AppTextStyles.caption.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                color: isDark ? Colors.grey[400] : Colors.grey[600],
               ),
             ),
           ],
@@ -558,22 +628,28 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildRecentTrips(MockDataService mockData) {
+  Widget _buildRecentTrips(MockDataService mockData, bool isDark, Color primaryColor, Color cardColor) {
     final trips = mockData.tripHistory.take(5).toList();
 
     if (trips.isEmpty) {
       return Card(
+        color: cardColor,
+        elevation: isDark ? 2 : 1,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Center(
             child: Column(
               children: [
-                Icon(Icons.directions_car, size: 48, color: Colors.grey),
+                Icon(
+                  Icons.directions_car,
+                  size: 48,
+                  color: isDark ? Colors.grey[600] : Colors.grey[400],
+                ),
                 const SizedBox(height: 8),
                 Text(
                   'No trips yet',
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: Colors.grey,
+                    color: isDark ? Colors.grey[600] : Colors.grey[400],
                   ),
                 ),
               ],
@@ -584,6 +660,8 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     return Card(
+      color: cardColor,
+      elevation: isDark ? 2 : 1,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -593,6 +671,7 @@ class _ProfilePageState extends State<ProfilePage> {
               'Recent Trips',
               style: AppTextStyles.bodyLarge.copyWith(
                 fontWeight: FontWeight.bold,
+                color: primaryColor,
               ),
             ),
             const SizedBox(height: 16),
@@ -601,7 +680,7 @@ class _ProfilePageState extends State<ProfilePage> {
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
-                    color: Theme.of(context).colorScheme.surfaceVariant,
+                    color: isDark ? Colors.grey[800]! : Colors.grey[300]!,
                   ),
                 ),
               ),
@@ -617,13 +696,16 @@ class _ProfilePageState extends State<ProfilePage> {
                           '${trip.pickupLocation}',
                           style: AppTextStyles.bodyMedium.copyWith(
                             fontWeight: FontWeight.w500,
+                            color: primaryColor,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           '→ ${trip.dropoffLocation}',
-                          style: AppTextStyles.caption,
+                          style: AppTextStyles.caption.copyWith(
+                            color: isDark ? Colors.grey[400] : Colors.grey[600],
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),

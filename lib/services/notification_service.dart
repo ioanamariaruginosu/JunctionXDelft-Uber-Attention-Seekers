@@ -83,6 +83,26 @@ class NotificationService extends ChangeNotifier {
     showPopup(notification);
   }
 
+  // ======== REST-PIN VISIBILITY CONTROL ========
+  bool showRestPins = false;
+
+  void _setShowRestPins(bool v) {
+    if (showRestPins != v) {
+      showRestPins = v;
+      _notifySafely();
+    }
+  }
+
+  void showRestPinsNow() => _setShowRestPins(true);
+
+  void hideRestPinsAndReset() {
+    _setShowRestPins(false);
+    // allow future wellness alerts to trigger again
+    _restAlert95Fired = false;
+    _restAlert120Fired = false;
+  }
+  // =============================================
+
   void showWellnessReminder(String message) {
     final notification = NotificationModel(
       id: const Uuid().v4(),
@@ -95,6 +115,10 @@ class NotificationService extends ChangeNotifier {
         NotificationAction(label: 'Snooze 30 min', actionId: 'snooze'),
       ],
     );
+
+    // Pins visible as soon as the assistant suggests resting
+    showRestPinsNow();
+
     showPopup(notification);
   }
 
@@ -174,17 +198,25 @@ class NotificationService extends ChangeNotifier {
 
   void handleAction(String notificationId, String actionId) {
     switch (actionId) {
+      case 'snooze':
+      // Snoozing hides pins and resets thresholds
+        hideRestPinsAndReset();
+        break;
+      case 'take_break':
+      // Keep pins visible so they can pick a rest spot
+        showRestPinsNow();
+        break;
       case 'accept_trip':
       case 'decline_trip':
       case 'navigate_to_zone':
-      case 'take_break':
-      case 'snooze':
+      case 'take_break_confirmed':
       case 'open_chat':
       case 'acknowledge':
       case 'dismiss':
       default:
-        dismissPopup(notificationId);
+        break;
     }
+    dismissPopup(notificationId);
   }
 
   // ========= Rest timer (backend source of truth) =========
@@ -317,9 +349,11 @@ class NotificationService extends ChangeNotifier {
       if (forceNotify) _notifySafely();
     }
 
+    // When going inactive, clear thresholds and hide pins
     if (!activeSession) {
       _restAlert95Fired = false;
       _restAlert120Fired = false;
+      _setShowRestPins(false);
     }
   }
 

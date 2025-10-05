@@ -24,7 +24,7 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> with TickerProviderStateMixin {
+class _DashboardPageState extends State<DashboardPage> with TickerProviderStateMixin, WidgetsBindingObserver {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late AnimationController _pulseController;
   late AnimationController _counterController;
@@ -35,6 +35,8 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
   @override
   void initState() {
     super.initState();
+
+    WidgetsBinding.instance.addObserver(this);
 
     _pulseController = AnimationController(
       duration: const Duration(seconds: 2),
@@ -73,7 +75,21 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
   void dispose() {
     _pulseController.dispose();
     _counterController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      final session = context.read<NotificationService>();
+      if (session.activeSession) {
+        context.read<NotificationService>().stopRestSession();
+        context.read<MockDataService>().goOffline();
+      }
+    }
   }
 
   @override
@@ -93,6 +109,17 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
         children: [
           _buildMapInterface(),
           _buildTopBar(context, authService, mockData),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 72,
+            left: 0,
+            right: 0,
+            child: PhoneDemandCard(
+              userType: 'food',               // or from user settings
+              cityId: 4,                      // your driver’s city
+              at: DateTime.now(),             // optional; defaults to now()
+              //at: DateTime.parse("2023-01-16T19:00:00Z")
+            ),
+          ),
           if (mockData.currentTripRequest != null) _buildTripRequestCard(context, mockData, maskotService, session),
           if (mockData.activeTrip != null) _buildActiveTripCard(context, mockData),
           const MascotWidget(),
@@ -156,7 +183,9 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
               left: 0,
               child: Container(
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
+                  color: theme.brightness == Brightness.dark
+                      ? const Color(0xFF1F1F1F)
+                      : Colors.white,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
@@ -168,21 +197,25 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                 ),
                 child: IconButton(
                   icon: const Icon(Icons.menu),
-                  color: theme.colorScheme.primary,
+                  color: theme.brightness == Brightness.dark
+                      ? Colors.white
+                      : Colors.black,
                   onPressed: () => _scaffoldKey.currentState?.openDrawer(),
                 ),
               ),
             ),
-              left: 0,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+            Center(
+              child: AnimatedBuilder(
+                animation: _counterAnimation,
+                builder: (context, child) {
+                  // rest of your code
+                  final earnings = mockData.todayEarnings?.totalEarnings ?? 0;
+                  final displayEarnings = earnings * _counterAnimation.value;
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(20),
                     ),
                   ],
                 ),
@@ -235,7 +268,6 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
       ),
     );
   }
-
 
   Widget _buildTripRequestCard(BuildContext context, MockDataService mockData, MaskotAIService maskotService, NotificationService session) {
     final trip = mockData.currentTripRequest!;
@@ -337,7 +369,11 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                     const SizedBox(width: 16),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () => mockData.acceptTrip(),
+                        onPressed: () {
+                          mockData.acceptTrip();
+                          // NEW: accepting a new trip clears rest pins
+                          context.read<NotificationService>().hideRestPinsAndReset();
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.success,
                         ),
@@ -545,74 +581,114 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
     final user = authService.currentUser;
 
     return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: BoxDecoration(color: theme.colorScheme.primary),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: theme.colorScheme.surface,
-                  child: Text(
-                    user?.fullName.substring(0, 1).toUpperCase() ?? 'U',
-                    style: TextStyle(fontSize: 24, color: theme.colorScheme.primary),
+      child: Container(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF1F1F1F)
+            : Colors.white,
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.black
+                        : Colors.white,
+                    child: Text(
+                      user?.fullName.substring(0, 1).toUpperCase() ?? 'U',
+                      style: TextStyle(
+                        fontSize: 24,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.black,
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  user?.fullName ?? 'User',
-                  style: TextStyle(
-                    color: theme.colorScheme.onPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                  const SizedBox(height: 12),
+                  Text(
+                    user?.fullName ?? 'User',
+                    style: TextStyle(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.black
+                          : Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                Text(
-                  user?.email ?? '',
-                  style: TextStyle(
-                    color: theme.colorScheme.onPrimary.withOpacity(0.8),
-                    fontSize: 14,
+                  Text(
+                    user?.email ?? '',
+                    style: TextStyle(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.black.withOpacity(0.7)
+                          : Colors.white.withOpacity(0.8),
+                      fontSize: 14,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.dashboard),
-            title: const Text('Dashboard'),
-            onTap: () => Navigator.pop(context),
-          ),
-          ListTile(
-            leading: const Icon(Icons.person),
-            title: const Text('Profile & Stats'),
-            onTap: () {
-              Navigator.pop(context);
-              context.push('/profile');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.settings),
-            title: const Text('Settings'),
-            onTap: () {
-              Navigator.pop(context);
-              context.push('/settings');
-            },
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Logout'),
-            onTap: () async {
-              await authService.logout();
-              if (context.mounted) {
-                context.go('/auth');
-              }
-            },
-          ),
-        ],
+            ListTile(
+              leading: Icon(
+                Icons.dashboard,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black,
+              ),
+              title: const Text('Dashboard'),
+              onTap: () => Navigator.pop(context),
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.person,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black,
+              ),
+              title: const Text('Profile & Stats'),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/profile');
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.settings,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black,
+              ),
+              title: const Text('Settings'),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/settings');
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: Icon(
+                Icons.logout,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black,
+              ),
+              title: const Text('Logout'),
+              onTap: () async {
+                await authService.logout();
+                if (context.mounted) {
+                  context.go('/auth');
+                }
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

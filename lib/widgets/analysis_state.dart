@@ -55,7 +55,7 @@ class _MaskotAnalysisState extends State<MaskotAnalysis> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Maskot AI analyzing...',
+                    'Ube analyzing...',
                     style: TextStyle(
                       color: theme.colorScheme.onSurface,
                       fontStyle: FontStyle.italic,
@@ -107,7 +107,7 @@ class _MaskotAnalysisState extends State<MaskotAnalysis> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Maskot AI Recommendation',
+                        'Ube Recommendation',
                         style: TextStyle(
                           color: theme.colorScheme.onSurface,
                           fontWeight: FontWeight.bold,
