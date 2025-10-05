@@ -9,7 +9,6 @@ public class SessionInfo {
     private final List<SessionPeriod> sessions = new ArrayList<>();
     private LocalDateTime currentSessionStart;
 
-    // Accessors used by the service
     public List<SessionPeriod> getSessions() { return Collections.unmodifiableList(sessions); }
     public void addSession(SessionPeriod p) { sessions.add(p); }
 
