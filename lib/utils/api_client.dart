@@ -46,10 +46,17 @@ class ApiClient {
       String endpoint, {
         Map<String, dynamic>? body,
         Map<String, String>? headers,
+        Map<String, dynamic>? queryParams,
       }) async {
     try {
+      String queryString = '';
+      if (queryParams != null && queryParams.isNotEmpty) {
+        queryString = Uri(queryParameters: queryParams.map(
+              (key, value) => MapEntry(key, value.toString()),
+        )).query;
+      }
       final response = await http.post(
-        Uri.parse('$baseUrl$endpoint'),
+        Uri.parse('$baseUrl$endpoint?$queryString'),
         headers: {..._defaultHeaders, ...?headers},
         body: body != null ? jsonEncode(body) : null,
       );
