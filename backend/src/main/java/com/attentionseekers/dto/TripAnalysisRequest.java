@@ -11,4 +11,8 @@ public class TripAnalysisRequest {
     private Double surgeMultiplier; // nullable
     private String pickupLocation;
     private String dropoffLocation;
+    private String pickupLat;
+    private String pickupLon;
+    private String dropOffLat;
+    private String dropOffLon;
 }

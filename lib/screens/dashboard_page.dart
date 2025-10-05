@@ -20,7 +20,7 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> with TickerProviderStateMixin {
+class _DashboardPageState extends State<DashboardPage> with TickerProviderStateMixin, WidgetsBindingObserver {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late AnimationController _pulseController;
   late AnimationController _counterController;
@@ -30,6 +30,8 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
   @override
   void initState() {
     super.initState();
+
+    WidgetsBinding.instance.addObserver(this);
 
     _pulseController = AnimationController(
       duration: const Duration(seconds: 2),
@@ -68,7 +70,21 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
   void dispose() {
     _pulseController.dispose();
     _counterController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      final session = context.read<NotificationService>();
+      if (session.activeSession) {
+        context.read<NotificationService>().stopRestSession();
+        context.read<MockDataService>().goOffline();
+      }
+    }
   }
 
   @override
