@@ -349,6 +349,7 @@ class NotificationService extends ChangeNotifier {
       if (forceNotify) _notifySafely();
     }
 
+    debugPrint("ACTIVE SESSIONS IS $activeSession AND REST PINS ARE IN MODE $showRestPins");
     // When going inactive, clear thresholds and hide pins
     if (!activeSession) {
       _restAlert95Fired = false;

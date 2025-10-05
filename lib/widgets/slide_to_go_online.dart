@@ -124,13 +124,13 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline>
   }
 
   Widget _buildSlider(Size size, ThemeData theme, bool isDark) {
-    const sliderHeight = 60.0;
-    const thumbSize = 50.0;
+    const sliderHeight = 70.0;
+    const thumbSize = 60.0;
     final maxDrag = size.width - 48 - thumbSize;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-      child: Stack(
+      padding: const EdgeInsets.all(24),
+      child: Column(
         children: [
           // Background track
           Container(
