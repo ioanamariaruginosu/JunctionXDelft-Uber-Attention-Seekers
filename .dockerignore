@@ -1,0 +1,41 @@
+# Git & IDE
+.git
+.gitignore
+.idea
+.vscode
+
+# OS
+.DS_Store
+Thumbs.db
+
+# General build junk
+**/build/
+**/dist/
+**/out/
+**/target/
+**/.gradle/
+**/.mvn/
+
+# Node/JS (if any)
+node_modules
+npm-debug.log
+yarn.lock
+pnpm-lock.yaml
+
+# Flutter builds
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache
+.pub/
+.melos_tool/
+android/.gradle/
+android/.idea/
+ios/Pods/
+**/GeneratedPluginRegistrant.*
+**/Generated.xcconfig
+**/ephemeral/
+**/build/
+
+# Logs
+*.log

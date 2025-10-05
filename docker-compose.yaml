@@ -1,0 +1,58 @@
+services:
+  prep:
+    image: python:3.11-slim
+    container_name: seekers-prep
+    working_dir: /app
+    volumes:
+      # mount the actual folder that contains the script
+      - ./tools/ingest:/app:ro
+      # put your Excel file here: ./data/uber_hackathon_v2_mock_data.xlsx
+      - ./data:/data:ro
+      # where the CSV should be written so Postgres can read it on init
+      - ./docker/db/init:/out
+    command: >
+      bash -lc "pip install --no-cache-dir pandas openpyxl &&
+                python /app/xlsx_to_jobs_like_csv.py /data/uber_hackathon_v2_mock_data.xlsx --out /out/jobs_like.csv"
+
+  db:
+    image: postgres:15-alpine
+    container_name: seekers-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: attention_seekers
+    ports:
+      - "5432:5432"
+    volumes:
+      # This must contain 01_schema.sql, 02_load_jobs_like.sql, and (after prep) jobs_like.csv
+      - ./docker/db/init:/docker-entrypoint-initdb.d:ro
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d attention_seekers || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    depends_on:
+      prep:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    container_name: seekers-backend
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/attention_seekers
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_FLYWAY_ENABLED: "true"
+      JAVA_OPTS: "-Xms256m -Xmx512m"
+    restart: unless-stopped
+
+volumes:
+  db-data:

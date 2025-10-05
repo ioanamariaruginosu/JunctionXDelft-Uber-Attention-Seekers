@@ -150,6 +150,10 @@ class MaskotAIService extends ChangeNotifier {
           'surgeMultiplier': trip.surgeMultiplier,
           'pickupLocation': trip.pickupLocation,
           'dropoffLocation': trip.dropoffLocation,
+          'pickupLat': trip.pickupLat,
+          'pickupLon': trip.pickupLng,
+          'dropOffLat': trip.dropoffLat,
+          'dropOffLon': trip.dropoffLng
         },
       );
 

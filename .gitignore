@@ -9,3 +9,11 @@ ios
 backend/target
 .DS_STORE
 backend/sessions/demo.json
+sessions
+ios
+android
+windows
+linux
+macos
+web
+.metadata

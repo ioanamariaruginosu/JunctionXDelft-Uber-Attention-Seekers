@@ -16,6 +16,10 @@ import java.util.Set;
  */
 public class DemandCalculator {
 
+    public enum UserType {
+        RIDER, FOOD
+    }
+
     /**
      * Compute per-zone demand using the provided signals.
      *
@@ -29,6 +33,7 @@ public class DemandCalculator {
      * @param incentives normalized incentive score (0..1)
      * @param weatherFactor multiplier around 1.0 (e.g. 1.05 for rain boosting eats)
      * @param cancellation cancellation rates (0..1) that penalize rides
+     * @param userType rider or food (to filter demand focus)
      * @return map zone -> ZoneDemand
      */
     public static Map<String, ZoneDemand> calculateDemand(
@@ -38,7 +43,8 @@ public class DemandCalculator {
             Map<String, Double> heat,
             Map<String, Double> incentives,
             Map<String, Double> weatherFactor,
-            Map<String, Double> cancellation
+            Map<String, Double> cancellation,
+            UserType userType
     ) {
         Map<String, ZoneDemand> out = new HashMap<>();
 
@@ -69,11 +75,17 @@ public class DemandCalculator {
             String ridesLevel = toLevel(ridesScore);
             String eatsLevel  = toLevel(eatsScore);
 
-            String recommendation = "either";
-            if (ridesScore - eatsScore > 0.15) recommendation = "rides";
-            else if (eatsScore - ridesScore > 0.15) recommendation = "eats";
-            else if (ridesScore < 0.33 && eatsScore < 0.33) recommendation = "stay";
-
+            String recommendation;
+            if (userType == UserType.RIDER) {
+                recommendation = "Focus on ride demand (" + ridesLevel + ")";
+            } else if (userType == UserType.FOOD) {
+                recommendation = "Focus on food demand (" + eatsLevel + ")";
+            } else {
+                if (ridesScore - eatsScore > 0.15) recommendation = "rides";
+                else if (eatsScore - ridesScore > 0.15) recommendation = "eats";
+                else if (ridesScore < 0.33 && eatsScore < 0.33) recommendation = "stay";
+                else recommendation = "either";
+            }
             ZoneDemand zd = new ZoneDemand(round(ridesScore), ridesLevel, round(eatsScore), eatsLevel, recommendation);
             out.put(z, zd);
         }
