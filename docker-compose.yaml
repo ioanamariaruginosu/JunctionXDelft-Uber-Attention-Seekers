@@ -1,47 +1,58 @@
-version: "3.9"
-
 services:
+  prep:
+    image: python:3.11-slim
+    container_name: seekers-prep
+    working_dir: /app
+    volumes:
+      # mount the actual folder that contains the script
+      - ./tools/ingest:/app:ro
+      # put your Excel file here: ./data/uber_hackathon_v2_mock_data.xlsx
+      - ./data:/data:ro
+      # where the CSV should be written so Postgres can read it on init
+      - ./docker/db/init:/out
+    command: >
+      bash -lc "pip install --no-cache-dir pandas openpyxl &&
+                python /app/xlsx_to_jobs_like_csv.py /data/uber_hackathon_v2_mock_data.xlsx --out /out/jobs_like.csv"
+
+  db:
+    image: postgres:15-alpine
+    container_name: seekers-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: attention_seekers
+    ports:
+      - "5432:5432"
+    volumes:
+      # This must contain 01_schema.sql, 02_load_jobs_like.sql, and (after prep) jobs_like.csv
+      - ./docker/db/init:/docker-entrypoint-initdb.d:ro
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d attention_seekers || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    depends_on:
+      prep:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
   backend:
     build: ./backend
     container_name: seekers-backend
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "8080:8080"
     environment:
-      # Use profiles only if you actually have application-docker.yml etc.
-      # SPRING_PROFILES_ACTIVE: docker
-
-      # Example extra JVM tuning (optional)
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/attention_seekers
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_FLYWAY_ENABLED: "true"
       JAVA_OPTS: "-Xms256m -Xmx512m"
-
-      # If you added CORS config reading from env, pass it here:
-      # ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:8081"
     restart: unless-stopped
-    # If later connect to DB/Redis, uncomment depends_on
-    # depends_on:
-    #   - db
-    #   - redis
 
-  # === OPTIONAL: Postgres (only if/when you wire a DB) ===
-  # db:
-  #   image: postgres:15
-  #   container_name: seekers-postgres
-  #   environment:
-  #     POSTGRES_DB: seekers
-  #     POSTGRES_USER: seekers
-  #     POSTGRES_PASSWORD: seekers
-  #   volumes:
-  #     - db_data:/var/lib/postgresql/data
-  #   ports:
-  #     - "5432:5432"
-  #   restart: unless-stopped
-
-  # === OPTIONAL: Redis (for caching) ===
-  # redis:
-  #   image: redis:7
-  #   container_name: seekers-redis
-  #   ports:
-  #     - "6379:6379"
-  #   restart: unless-stopped
-
-# volumes:
-#   db_data:
+volumes:
+  db-data:
