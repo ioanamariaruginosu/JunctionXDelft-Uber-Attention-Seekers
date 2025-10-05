@@ -5,14 +5,14 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import 'package:geolocator/geolocator.dart';
 import 'dart:math' as math;
-import 'package:provider/provider.dart'; // NEW
+import 'package:provider/provider.dart'; 
 
 import '../utils/api_client.dart';
-import '../services/notification_service.dart'; // to watch showRestPins
+import '../services/notification_service.dart'; 
 
 class DemandZone {
   final LatLng center;
-  final double radius; // in meters
+  final double radius; 
   final double multiplier;
   final Color color;
 
@@ -41,7 +41,6 @@ class RestLocation {
 
   factory RestLocation.fromJson(Map<String, dynamic> json) {
     try {
-      // Simple format with latitude/longitude directly in the object
       return RestLocation(
         id: json['id'] as String? ?? 'unknown',
         name: json['name'] as String? ?? 'Parking Location',
@@ -66,7 +65,7 @@ class RealMapWidget extends StatefulWidget {
 
 class _RealMapWidgetState extends State<RealMapWidget> {
   final MapController _mapController = MapController();
-  LatLng _currentLocation = LatLng(51.5074, -0.1278); // Default: London
+  LatLng _currentLocation = LatLng(51.5074, -0.1278); 
   bool _isLoadingLocation = true;
   bool _isDark = false;
   List<DemandZone> _demandZones = [];
@@ -93,7 +92,6 @@ class _RealMapWidgetState extends State<RealMapWidget> {
       );
 
       if (response.success && response.data != null) {
-        // Handle both array and GeoJSON formats
         List<dynamic> features;
         if (response.data is Map && response.data.containsKey('features')) {
           features = response.data['features'] as List<dynamic>;
@@ -125,14 +123,13 @@ class _RealMapWidgetState extends State<RealMapWidget> {
   void _startRandomZoneGeneration() {
     _generateDemandZones();
 
-    // Then generate new zones at random intervals (between 10-30 seconds)
     void scheduleNext() {
       final random = math.Random();
-      final seconds = 10 + random.nextInt(21); // 10 to 30 seconds
+      final seconds = 10 + random.nextInt(21); 
 
       _zoneTimer = Timer(Duration(seconds: seconds), () {
         _generateDemandZones();
-        scheduleNext(); // Schedule the next generation
+        scheduleNext(); 
       });
     }
 
@@ -143,11 +140,11 @@ class _RealMapWidgetState extends State<RealMapWidget> {
     final random = math.Random();
     _demandZones.clear();
 
-    // Generate 5-8 random demand zones around current location
+    
     final numZones = 5 + random.nextInt(4);
 
     for (int i = 0; i < numZones; i++) {
-      // Random offset from current location (roughly within 5km)
+      
       final latOffset = (random.nextDouble() - 0.5) * 0.05;
       final lngOffset = (random.nextDouble() - 0.5) * 0.05;
 
@@ -156,10 +153,10 @@ class _RealMapWidgetState extends State<RealMapWidget> {
         _currentLocation.longitude + lngOffset,
       );
 
-      // Random multiplier between 1.2x and 3.0x
+      
       final multiplier = 1.2 + random.nextDouble() * 1.8;
 
-      // Color based on multiplier
+      
       Color color;
       if (multiplier >= 2.5) {
         color = Colors.red.withOpacity(0.3);
@@ -171,7 +168,6 @@ class _RealMapWidgetState extends State<RealMapWidget> {
         color = Colors.green.withOpacity(0.3);
       }
 
-      // Random radius between 300-800 meters
       final radius = 300.0 + random.nextDouble() * 500;
 
       _demandZones.add(DemandZone(
@@ -264,12 +260,12 @@ class _RealMapWidgetState extends State<RealMapWidget> {
                 tileProvider: NetworkTileProvider(),
               ),
 
-              // Demand zones as circles
+              
               CircleLayer(
                 circles: _demandZones.map((zone) {
                   return CircleMarker(
                     point: zone.center,
-                    radius: zone.radius / 2, // Adjust visual size
+                    radius: zone.radius / 2, 
                     color: zone.color,
                     borderColor: zone.color.withOpacity(0.8),
                     borderStrokeWidth: 2,
@@ -278,7 +274,6 @@ class _RealMapWidgetState extends State<RealMapWidget> {
                 }).toList(),
               ),
 
-              // Markers showing multipliers
               MarkerLayer(
                 markers: _demandZones.map((zone) {
                   return Marker(
