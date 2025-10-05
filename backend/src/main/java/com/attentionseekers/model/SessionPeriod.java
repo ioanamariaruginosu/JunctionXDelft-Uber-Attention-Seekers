@@ -6,7 +6,7 @@ public class SessionPeriod {
   private LocalDateTime start;
   private LocalDateTime end;
 
-  public SessionPeriod() {} // for Jackson
+  public SessionPeriod() {}
 
   public SessionPeriod(LocalDateTime start, LocalDateTime end) {
     this.start = start;
