@@ -10,7 +10,6 @@ import '../models/trip_model.dart';
 import '../utils/api_client.dart';
 
 class NotificationService extends ChangeNotifier {
-  // ========= Popup/notification state =========
   final List<NotificationModel> _activePopups = [];
   final Random _random = Random();
   Timer? _autoNotificationTimer;
