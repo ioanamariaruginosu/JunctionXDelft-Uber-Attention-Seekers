@@ -22,7 +22,7 @@ class _MascotWidgetState extends State<MascotWidget> with TickerProviderStateMix
   late Animation<double> _rotationAnimation;
 
   String _currentTip = '';
-  String _currentImage = 'assets/images/Mascot_normal.png'; // default image
+  String _currentImage = 'assets/images/Mascot_normal.png'; 
   bool _showTip = false;
 
   @override
@@ -65,7 +65,6 @@ class _MascotWidgetState extends State<MascotWidget> with TickerProviderStateMix
       end: 2 * math.pi,
     ).animate(_rotationController);
 
-    // Start showing random tips
     _startTipCycle();
   }
 
@@ -101,7 +100,6 @@ class _MascotWidgetState extends State<MascotWidget> with TickerProviderStateMix
     });
   }
 
-  // HERE ARE THE TIPS
   void _showNextTip() {
     final tips = [
       '💰 Downtown surge active! +2.5x earnings',
@@ -137,20 +135,18 @@ class _MascotWidgetState extends State<MascotWidget> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     double mascotSize = MediaQuery.of(context).size.width * 0.15;
-    double mascotBottom = 80 + _floatingAnimation.value; // current mascot bottom
+    double mascotBottom = 80 + _floatingAnimation.value; 
 
     final maskotService = context.watch<MaskotAIService>();
     if (!maskotService.isEnabled) return const SizedBox.shrink();
 
     return Stack(
       children: [
-        // Popup above mascot
         PopupSystem(
           mascotSize: mascotSize,
           mascotBottom: mascotBottom,
         ),
 
-        // Mascot itself
         Positioned(
           bottom: mascotBottom,
           right: 20,
@@ -166,7 +162,6 @@ class _MascotWidgetState extends State<MascotWidget> with TickerProviderStateMix
           ),
         ),
 
-        // Tip bubble (optional)
         if (_showTip)
           Positioned(
             bottom: mascotBottom + mascotSize + 10,
@@ -206,27 +201,22 @@ class HappyFacePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
 
-    // Eyes
     final eyePaint = Paint()
       ..color = Colors.white
-      //..color = Color.blue
       ..style = PaintingStyle.fill;
 
-    // Left eye
     canvas.drawCircle(
       Offset(center.dx - 12, center.dy - 8),
       5,
       eyePaint,
     );
 
-    // Right eye
     canvas.drawCircle(
       Offset(center.dx + 12, center.dy - 8),
       5,
       eyePaint,
     );
 
-    // Smile
     final smilePaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.stroke
