@@ -1,14 +1,14 @@
-// lib/widgets/phone_demand_card.dart
+
 import 'package:flutter/material.dart';
 import '../utils/api_client.dart';
 
 class PhoneDemandCard extends StatefulWidget {
   const PhoneDemandCard({
     super.key,
-    required this.userType, // e.g. "food" or "ride"
-    required this.cityId,   // e.g. 4
-    this.at,                // if null -> DateTime.now().toUtc()
-    this.zoneId,            // optional (e.g. "A"); if null we auto-pick best zone by score
+    required this.userType, 
+    required this.cityId,   
+    this.at,                
+    this.zoneId,            
   });
 
   final String userType;
@@ -45,14 +45,12 @@ class _PhoneDemandCardState extends State<PhoneDemandCard> {
     final nowMap = nowRes.dataAsMap!;
     final nowZones = _asZones(nowMap['zones']);
 
-    // Decide which zone to use: prefer provided zoneId, else best-by-score in NOW range.
     final chosenZoneKey = _chooseZoneKey(
       zones: nowZones,
       userType: widget.userType,
       preferZoneId: widget.zoneId,
     );
 
-    // Read level/score/message for NOW
     final nowZone = nowZones[chosenZoneKey] ?? <String, dynamic>{};
     final nowLevel = _extractLevel(nowZone, widget.userType);
 
@@ -64,7 +62,6 @@ class _PhoneDemandCardState extends State<PhoneDemandCard> {
     final nextMap = nextRes.dataAsMap!;
     final nextZones = _asZones(nextMap['zones']);
 
-    // Use the SAME zone key for the next2h view (driver stays in their zone)
     final nextZone = nextZones[chosenZoneKey] ?? <String, dynamic>{};
     final nextLevel = _extractLevel(nextZone, widget.userType);
     final message = _extractRecommendation(nextZone);
@@ -89,8 +86,6 @@ class _PhoneDemandCardState extends State<PhoneDemandCard> {
     return out;
   }
 
-  /// Choose zone: prefer explicit [preferZoneId] if present in zones; otherwise pick
-  /// the zone with the highest score for the requested userType from the NOW response.
   String _chooseZoneKey({
     required Map<String, Map<String, dynamic>> zones,
     required String userType,
@@ -112,7 +107,6 @@ class _PhoneDemandCardState extends State<PhoneDemandCard> {
     return bestKey;
   }
 
-  /// Pull numeric score: ridesScore or eatsScore (depending on userType).
   double? _extractScore(Map<String, dynamic> zone, String userType) {
     if (userType.toLowerCase().startsWith('food') || userType.toLowerCase() == 'eats') {
       final v = zone['eatsScore'];
@@ -124,7 +118,6 @@ class _PhoneDemandCardState extends State<PhoneDemandCard> {
     return null;
   }
 
-  /// Pull raw level string: ridesLevel / eatsLevel.
   String _extractRawLevel(Map<String, dynamic> zone, String userType) {
     final raw = (userType.toLowerCase().startsWith('food') || userType.toLowerCase() == 'eats')
         ? zone['eatsLevel']
@@ -132,16 +125,14 @@ class _PhoneDemandCardState extends State<PhoneDemandCard> {
     return (raw ?? '').toString();
   }
 
-  /// Normalize level for UI: 'high'|'med'|'low' -> 'High'|'Medium'|'Low'
   String _extractLevel(Map<String, dynamic> zone, String userType) {
     final raw = _extractRawLevel(zone, userType).trim().toLowerCase();
     if (raw.startsWith('h')) return 'High';
-    if (raw.startsWith('m')) return 'Medium'; // handles "med"
+    if (raw.startsWith('m')) return 'Medium'; 
     if (raw.startsWith('l')) return 'Low';
     return raw.isEmpty ? 'Unknown' : raw[0].toUpperCase() + raw.substring(1);
   }
 
-  /// Use next-2h "recommendation" from the chosen zone if available.
   String? _extractRecommendation(Map<String, dynamic> zone) {
     final v = zone['recommendation'];
     return v == null ? null : v.toString();
@@ -282,9 +273,9 @@ class _PhoneDemandCardState extends State<PhoneDemandCard> {
 }
 
 class _DemandPair {
-  final String zoneKey; // e.g. "A"
-  final String now;     // "High" | "Medium" | "Low"
-  final String next2h;  // "High" | "Medium" | "Low"
+  final String zoneKey; 
+  final String now;     
+  final String next2h;  
   final String? message;
   _DemandPair({
     required this.zoneKey,
