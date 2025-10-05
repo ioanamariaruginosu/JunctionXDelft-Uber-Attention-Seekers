@@ -104,7 +104,6 @@ class _DashboardPageState extends State<DashboardPage>
           _buildMapInterface(),
           _buildTopBar(context, authService, mockData),
 
-          // ⬇️ Half-width PhoneDemandCard
           Positioned(
             top: MediaQuery.of(context).padding.top + 52,
             left: 0,
@@ -112,7 +111,7 @@ class _DashboardPageState extends State<DashboardPage>
             child: Align(
               alignment: Alignment.centerLeft,
               child: FractionallySizedBox(
-                widthFactor: 0.5, // ✅ Half the screen width
+                widthFactor: 0.3,
                 child: PhoneDemandCard(
                   userType: 'food',
                   cityId: 4,
