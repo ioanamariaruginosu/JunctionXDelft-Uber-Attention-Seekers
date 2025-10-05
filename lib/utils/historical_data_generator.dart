@@ -23,7 +23,6 @@ class HistoricalTripGenerator {
     if (_isLoaded) return;
 
     try {
-      // Load rides_trips.csv
       final tripsData = await rootBundle.loadString('assets/data/rides_trips.csv');
       final tripsList = const CsvToListConverter(
         eol: '\n',
@@ -32,23 +31,19 @@ class HistoricalTripGenerator {
       _historicalTrips = [];
       _tripsByTimeSlot = {};
 
-      // Skip header row
       for (int i = 1; i < tripsList.length; i++) {
         try {
           final row = tripsList[i];
           final trip = HistoricalTrip.fromCsvRow(row);
           _historicalTrips!.add(trip);
 
-          // Group trips by time slot for better temporal accuracy
           final hour = _extractHourFromTimestamp(row[7]?.toString() ?? '');
           final timeSlot = _getTimeSlot(hour);
           _tripsByTimeSlot![timeSlot] = (_tripsByTimeSlot![timeSlot] ?? [])..add(trip);
         } catch (e) {
-          // Skip malformed rows
         }
       }
 
-      // Load surge_by_hour.csv
       final surgeData = await rootBundle.loadString('assets/data/surge_by_hour.csv');
       final surgeList = const CsvToListConverter(
         eol: '\n',
@@ -67,11 +62,9 @@ class HistoricalTripGenerator {
           _surgeByHour![hour] = (_surgeByHour![hour] ?? 0.0) + surge;
           surgeCounts[hour] = (surgeCounts[hour] ?? 0) + 1;
         } catch (e) {
-          // Skip malformed rows
         }
       }
 
-      // Calculate averages
       _surgeByHour!.forEach((hour, total) {
         final count = surgeCounts[hour] ?? 1;
         _surgeByHour![hour] = total / count;
@@ -86,24 +79,18 @@ class HistoricalTripGenerator {
   }
 
   TripModel generateRealisticTrip() {
-    // Select template based on current time slot for better realism
     final currentHour = DateTime.now().hour;
     final template = _historicalTrips![_random.nextInt(_historicalTrips!.length)];
 
-
-    // Get surge multiplier with variation
     final baseSurge = _surgeByHour?[currentHour] ?? 1.0;
     final surge = (baseSurge * (0.8 + _random.nextDouble() * 0.4)).clamp(1.0, 3.5);
 
-    // Apply controlled mutations to distance
     final distanceMutation = 0.85 + _random.nextDouble() * 0.3;
     final distance = template.distanceKm * distanceMutation * 0.621371; // km to miles
 
-    // Apply controlled mutations to duration
     final durationMutation = 0.8 + _random.nextDouble() * 0.4;
     final durationMins = (template.durationMins * durationMutation).round();
 
-    // Calculate fare based on distance and time
     final baseFarePerMile = 1.5 + _random.nextDouble() * 1.0;
     final baseFare = distance * baseFarePerMile;
     final timeComponent = durationMins * (0.2 + _random.nextDouble() * 0.2);
@@ -117,7 +104,6 @@ class HistoricalTripGenerator {
       duration: durationMins,
     );
 
-    // Generate realistic coordinates based on template with small variations
     final pickupLat = template.pickupLat + (_random.nextDouble() * 0.02 - 0.01);
     final pickupLng = template.pickupLng + (_random.nextDouble() * 0.02 - 0.01);
 
