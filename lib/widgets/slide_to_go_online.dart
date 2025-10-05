@@ -118,125 +118,119 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
   }
 
   Widget _buildSlider(Size size, ThemeData theme) {
-    const sliderHeight = 70.0;
-    const thumbSize = 60.0;
+    const sliderHeight = 60.0; // Reduced from 70
+    const thumbSize = 50.0; // Reduced from 60
     final maxDrag = size.width - 48 - thumbSize;
 
     return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20), // Reduced vertical padding
+      child: Stack(
         children: [
-          Stack(
-            children: [
-              // Background track
-              Container(
-                height: sliderHeight,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.grey.shade200,
-                      Colors.grey.shade300,
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(35),
-                ),
-                child: Center(
-                  child: AnimatedBuilder(
-                    animation: _pulseAnimation,
-                    builder: (context, child) {
-                      return Transform.scale(
-                        scale: _isDragging ? 1.0 : _pulseAnimation.value,
-                        child: Text(
-                          'Slide to go online',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+          // Background track
+          Container(
+            height: sliderHeight,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.grey.shade200,
+                  Colors.grey.shade300,
+                ],
               ),
-
-              // Animated fill based on drag
-              AnimatedContainer(
-                duration: _isDragging
-                    ? Duration.zero
-                    : const Duration(milliseconds: 300),
-                height: sliderHeight,
-                width: _dragPosition + thumbSize,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF4CAF50),
-                      Color(0xFF66BB6A),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(35),
-                ),
-              ),
-
-              // Draggable thumb
-              AnimatedPositioned(
-                duration: _isDragging
-                    ? Duration.zero
-                    : const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-                left: _dragPosition,
-                top: (sliderHeight - thumbSize) / 2,
-                child: GestureDetector(
-                  onHorizontalDragStart: (_) {
-                    setState(() => _isDragging = true);
-                  },
-                  onHorizontalDragUpdate: (details) {
-                    setState(() {
-                      _dragPosition = (_dragPosition + details.delta.dx)
-                          .clamp(0.0, maxDrag);
-                    });
-                  },
-                  onHorizontalDragEnd: (_) {
-                    if (_dragPosition > maxDrag * 0.8) {
-                      // Completed - go online
-                      widget.onChanged(true);
-                      setState(() {
-                        _dragPosition = 0;
-                        _isDragging = false;
-                      });
-                    } else {
-                      // Not completed - reset
-                      setState(() {
-                        _dragPosition = 0;
-                        _isDragging = false;
-                      });
-                    }
-                  },
-                  child: Container(
-                    width: thumbSize,
-                    height: thumbSize,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Center(
+              child: AnimatedBuilder(
+                animation: _pulseAnimation,
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: _isDragging ? 1.0 : _pulseAnimation.value,
+                    child: Text(
+                      'Slide to go online',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
-                    child: Icon(
-                      Icons.chevron_right,
-                      color: _dragPosition > maxDrag * 0.5
-                          ? Colors.green
-                          : Colors.grey.shade600,
-                      size: 32,
+                  );
+                },
+              ),
+            ),
+          ),
+
+          // Animated fill
+          AnimatedContainer(
+            duration: _isDragging
+                ? Duration.zero
+                : const Duration(milliseconds: 300),
+            height: sliderHeight,
+            width: _dragPosition + thumbSize,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF4CAF50),
+                  Color(0xFF66BB6A),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(30),
+            ),
+          ),
+
+          // Draggable thumb
+          AnimatedPositioned(
+            duration: _isDragging
+                ? Duration.zero
+                : const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+            left: _dragPosition,
+            top: (sliderHeight - thumbSize) / 2,
+            child: GestureDetector(
+              onHorizontalDragStart: (_) {
+                setState(() => _isDragging = true);
+              },
+              onHorizontalDragUpdate: (details) {
+                setState(() {
+                  _dragPosition = (_dragPosition + details.delta.dx)
+                      .clamp(0.0, maxDrag);
+                });
+              },
+              onHorizontalDragEnd: (_) {
+                if (_dragPosition > maxDrag * 0.8) {
+                  widget.onChanged(true);
+                  setState(() {
+                    _dragPosition = 0;
+                    _isDragging = false;
+                  });
+                } else {
+                  setState(() {
+                    _dragPosition = 0;
+                    _isDragging = false;
+                  });
+                }
+              },
+              child: Container(
+                width: thumbSize,
+                height: thumbSize,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
-                  ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.chevron_right,
+                  color: _dragPosition > maxDrag * 0.5
+                      ? Colors.green
+                      : Colors.grey.shade600,
+                  size: 28,
                 ),
               ),
-            ],
+            ),
           ),
         ],
       ),

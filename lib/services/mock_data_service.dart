@@ -155,9 +155,10 @@ class MockDataService extends ChangeNotifier {
     _earningsUpdateTimer?.cancel();
   }
 
-  void _generateTripRequest() {
+  void _generateTripRequest() async {
     if (!_isOnline || _activeTrip != null || _currentTripRequest != null) return;
 
+    await HistoricalTripGenerator.instance.loadHistoricalData();
     // Generate trip based on historical data
     _currentTripRequest = HistoricalTripGenerator.instance.generateRealisticTrip();
 
