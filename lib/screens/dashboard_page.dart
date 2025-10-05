@@ -23,7 +23,8 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> with TickerProviderStateMixin {
+class _DashboardPageState extends State<DashboardPage>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late AnimationController _pulseController;
   late AnimationController _counterController;
@@ -33,6 +34,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     _pulseController = AnimationController(
       duration: const Duration(seconds: 2),
@@ -55,13 +57,11 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = context.read<AuthService>();
       final userId = auth.currentUser?.id ?? 'demo';
-
       context.read<NotificationService>().initRestTimer(
-        userId: userId,
-        demoMode: false,
-        demoSecondsPerMinute: 1,
-      );
-
+            userId: userId,
+            demoMode: false,
+            demoSecondsPerMinute: 1,
+          );
       _counterController.forward();
     });
   }
@@ -70,7 +70,20 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
   void dispose() {
     _pulseController.dispose();
     _counterController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      final session = context.read<NotificationService>();
+      if (session.activeSession) {
+        session.stopRestSession();
+        context.read<MockDataService>().goOffline();
+      }
+    }
   }
 
   @override
@@ -91,14 +104,15 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
           _buildMapInterface(),
           _buildTopBar(context, authService, mockData),
 
+          // ⬇️ Half-width PhoneDemandCard
           Positioned(
             top: MediaQuery.of(context).padding.top + 52,
             left: 0,
             right: 0,
             child: Align(
-              alignment: Alignment.centerLeft, // or Alignment.centerLeft / centerRight
+              alignment: Alignment.centerLeft,
               child: FractionallySizedBox(
-                widthFactor: 0.3, // 👈 half the screen width
+                widthFactor: 0.5, // ✅ Half the screen width
                 child: PhoneDemandCard(
                   userType: 'food',
                   cityId: 4,
@@ -112,6 +126,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
             _buildTripRequestCard(context, mockData, maskotService, session),
           if (mockData.activeTrip != null)
             _buildActiveTripCard(context, mockData),
+
           const MascotWidget(),
           PopupSystem(mascotSize: mascotSize, mascotBottom: mascotBottom),
 
@@ -191,8 +206,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                       final earnings = mockData.todayEarnings?.totalEarnings ?? 0;
                       final displayEarnings = earnings * _counterAnimation.value;
                       return Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.surface,
                           borderRadius: BorderRadius.circular(20),
@@ -200,12 +214,10 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.attach_money,
-                                color: AppColors.success),
+                            const Icon(Icons.attach_money, color: AppColors.success),
                             Text(
                               displayEarnings.toStringAsFixed(2),
-                              style: AppTextStyles.headline4
-                                  .copyWith(color: AppColors.success),
+                              style: AppTextStyles.headline4.copyWith(color: AppColors.success),
                             ),
                           ],
                         ),
@@ -213,7 +225,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                     },
                   ),
                   const SizedBox(height: 8),
-                  const WeatherWidget(),
+                  const WeatherWidget(), // ✅ Added from second version
                 ],
               ),
             ),
@@ -223,8 +235,12 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
     );
   }
 
-  Widget _buildTripRequestCard(BuildContext context, MockDataService mockData,
-      MaskotAIService maskotService, NotificationService session) {
+  Widget _buildTripRequestCard(
+    BuildContext context,
+    MockDataService mockData,
+    MaskotAIService maskotService,
+    NotificationService session,
+  ) {
     final trip = mockData.currentTripRequest!;
 
     return Positioned(
@@ -235,7 +251,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
       child: SingleChildScrollView(
         child: Card(
           elevation: 8,
-          child: Container(
+          child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,10 +259,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'New Trip Request',
-                      style: AppTextStyles.headline4,
-                    ),
+                    const Text('New Trip Request', style: AppTextStyles.headline4),
                     TweenAnimationBuilder<int>(
                       tween: IntTween(begin: 15, end: 0),
                       duration: const Duration(seconds: 15),
@@ -255,9 +268,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: value <= 5
-                                ? AppColors.error
-                                : AppColors.warning,
+                            color: value <= 5 ? AppColors.error : AppColors.warning,
                           ),
                           child: Text(
                             '$value',
@@ -276,12 +287,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                   children: [
                     const Icon(Icons.trip_origin, color: AppColors.success),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        trip.pickupLocation,
-                        style: AppTextStyles.bodyMedium,
-                      ),
-                    ),
+                    Expanded(child: Text(trip.pickupLocation, style: AppTextStyles.bodyMedium)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -289,27 +295,18 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                   children: [
                     const Icon(Icons.location_on, color: AppColors.error),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        trip.dropoffLocation,
-                        style: AppTextStyles.bodyMedium,
-                      ),
-                    ),
+                    Expanded(child: Text(trip.dropoffLocation, style: AppTextStyles.bodyMedium)),
                   ],
                 ),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildTripDetail(Icons.attach_money,
-                        '\$${trip.totalEarnings.toStringAsFixed(2)}'),
-                    _buildTripDetail(Icons.straighten,
-                        '${trip.distance.toStringAsFixed(1)} mi'),
-                    _buildTripDetail(Icons.schedule,
-                        '${trip.estimatedDuration.inMinutes} min'),
+                    _buildTripDetail(Icons.attach_money, '\$${trip.totalEarnings.toStringAsFixed(2)}'),
+                    _buildTripDetail(Icons.straighten, '${trip.distance.toStringAsFixed(1)} mi'),
+                    _buildTripDetail(Icons.schedule, '${trip.estimatedDuration.inMinutes} min'),
                     if (trip.surge > 1.0)
-                      _buildTripDetail(
-                          Icons.bolt, '${trip.surge.toStringAsFixed(1)}x'),
+                      _buildTripDetail(Icons.bolt, '${trip.surge.toStringAsFixed(1)}x'),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -320,19 +317,18 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () => mockData.declineTrip(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.error,
-                        ),
+                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
                         child: const Text('Decline'),
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () => mockData.acceptTrip(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.success,
-                        ),
+                        onPressed: () {
+                          mockData.acceptTrip();
+                          context.read<NotificationService>().hideRestPinsAndReset();
+                        },
+                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
                         child: const Text('Accept'),
                       ),
                     ),
@@ -346,25 +342,16 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
     );
   }
 
-  Widget _buildTripDetail(IconData icon, String value) {
-    return Column(
-      children: [
-        Icon(icon, size: 20),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style:
-              AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.bold),
-        ),
-      ],
-    );
-  }
+  Widget _buildTripDetail(IconData icon, String value) => Column(
+        children: [
+          Icon(icon, size: 20),
+          const SizedBox(height: 4),
+          Text(value, style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.bold)),
+        ],
+      );
 
-  Widget _buildActiveTripCard(
-      BuildContext context, MockDataService mockData) {
+  Widget _buildActiveTripCard(BuildContext context, MockDataService mockData) {
     final trip = mockData.activeTrip!;
-    final theme = Theme.of(context);
-
     String statusText = '';
     IconData statusIcon = Icons.info;
     Color statusColor = AppColors.info;
@@ -396,19 +383,15 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
       child: Card(
         elevation: 8,
         color: statusColor,
-        child: Container(
+        child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
               Icon(statusIcon, color: Colors.white, size: 32),
               const SizedBox(height: 8),
-              Text(statusText,
-                  style: AppTextStyles.headline4
-                      .copyWith(color: Colors.white)),
+              Text(statusText, style: AppTextStyles.headline4.copyWith(color: Colors.white)),
               const SizedBox(height: 8),
-              Text(trip.dropoffLocation,
-                  style: AppTextStyles.bodyMedium
-                      .copyWith(color: Colors.white)),
+              Text(trip.dropoffLocation, style: AppTextStyles.bodyMedium.copyWith(color: Colors.white)),
             ],
           ),
         ),
@@ -434,8 +417,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                   backgroundColor: theme.colorScheme.surface,
                   child: Text(
                     user?.fullName.substring(0, 1).toUpperCase() ?? 'U',
-                    style: TextStyle(
-                        fontSize: 24, color: theme.colorScheme.primary),
+                    style: TextStyle(fontSize: 24, color: theme.colorScheme.primary),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -449,11 +431,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                 ),
                 Text(
                   user?.email ?? '',
-                  style: TextStyle(
-                    color:
-                        theme.colorScheme.onPrimary.withOpacity(0.8),
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: theme.colorScheme.onPrimary.withOpacity(0.8), fontSize: 14),
                 ),
               ],
             ),

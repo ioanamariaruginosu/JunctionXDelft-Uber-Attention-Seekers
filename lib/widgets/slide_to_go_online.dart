@@ -122,15 +122,60 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
     );
   }
 
+<<<<<<< HEAD
   Widget _buildSlider(Size size, ThemeData theme, bool isDark) {
     const sliderHeight = 70.0;
     const thumbSize = 60.0;
+=======
+<<<<<<< HEAD
+  Widget _buildSlider(Size size, ThemeData theme) {
+    const sliderHeight = 60.0; // Reduced from 70
+    const thumbSize = 50.0; // Reduced from 60
+=======
+  Widget _buildSlider(Size size, ThemeData theme, bool isDark) {
+    const sliderHeight = 70.0;
+    const thumbSize = 60.0;
+>>>>>>> 99aff08 (Changed colors to frontend to match uber app)
+>>>>>>> 38c0af7 (fix: apply color changes)
     final maxDrag = size.width - 48 - thumbSize;
 
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+          // Background track
+          Container(
+            height: sliderHeight,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.grey.shade200,
+                  Colors.grey.shade300,
+                ],
+              ),
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Center(
+              child: AnimatedBuilder(
+                animation: _pulseAnimation,
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: _isDragging ? 1.0 : _pulseAnimation.value,
+                    child: Text(
+                      'Slide to go online',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  );
+                },
+=======
+>>>>>>> 38c0af7 (fix: apply color changes)
           Stack(
             children: [
               // Background track
@@ -158,8 +203,30 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
                     },
                   ),
                 ),
+<<<<<<< HEAD
+=======
+>>>>>>> 99aff08 (Changed colors to frontend to match uber app)
+>>>>>>> 38c0af7 (fix: apply color changes)
               ),
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+          // Animated fill
+          AnimatedContainer(
+            duration: _isDragging
+                ? Duration.zero
+                : const Duration(milliseconds: 300),
+            height: sliderHeight,
+            width: _dragPosition + thumbSize,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF4CAF50),
+                  Color(0xFF66BB6A),
+                ],
+=======
+>>>>>>> 38c0af7 (fix: apply color changes)
               // Animated fill based on drag
               AnimatedContainer(
                 duration: _isDragging
@@ -171,8 +238,60 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
                   color: isDark ? Colors.white : Colors.black,
                   borderRadius: BorderRadius.circular(35),
                 ),
+<<<<<<< HEAD
+=======
+>>>>>>> 99aff08 (Changed colors to frontend to match uber app)
+>>>>>>> 38c0af7 (fix: apply color changes)
               ),
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+          // Draggable thumb
+          AnimatedPositioned(
+            duration: _isDragging
+                ? Duration.zero
+                : const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+            left: _dragPosition,
+            top: (sliderHeight - thumbSize) / 2,
+            child: GestureDetector(
+              onHorizontalDragStart: (_) {
+                setState(() => _isDragging = true);
+              },
+              onHorizontalDragUpdate: (details) {
+                setState(() {
+                  _dragPosition = (_dragPosition + details.delta.dx)
+                      .clamp(0.0, maxDrag);
+                });
+              },
+              onHorizontalDragEnd: (_) {
+                if (_dragPosition > maxDrag * 0.8) {
+                  widget.onChanged(true);
+                  setState(() {
+                    _dragPosition = 0;
+                    _isDragging = false;
+                  });
+                } else {
+                  setState(() {
+                    _dragPosition = 0;
+                    _isDragging = false;
+                  });
+                }
+              },
+              child: Container(
+                width: thumbSize,
+                height: thumbSize,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+=======
+>>>>>>> 38c0af7 (fix: apply color changes)
               // Draggable thumb
               AnimatedPositioned(
                 duration: _isDragging
@@ -220,6 +339,17 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
                           offset: const Offset(0, 2),
                         ),
                       ],
+<<<<<<< HEAD
+=======
+                    ),
+                    child: Icon(
+                      Icons.chevron_right,
+                      color: _dragPosition > maxDrag * 0.5
+                          ? (isDark ? Colors.white : Colors.black)
+                          : Colors.grey.shade600,
+                      size: 32,
+>>>>>>> 99aff08 (Changed colors to frontend to match uber app)
+>>>>>>> 38c0af7 (fix: apply color changes)
                     ),
                     child: Icon(
                       Icons.chevron_right,
