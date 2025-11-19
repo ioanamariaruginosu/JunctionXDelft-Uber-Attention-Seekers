@@ -20,20 +20,16 @@ public class TripAnalysisService {
     public String analyzeTripRequest(TripAnalysisRequest request) {
         int currentHour = LocalTime.now().getHour();
 
-        // Parse coordinates
         Double pickupLat = parseCoordinate(request.getPickupLat());
         Double pickupLon = parseCoordinate(request.getPickupLon());
         Double dropoffLat = parseCoordinate(request.getDropOffLat());
         Double dropoffLon = parseCoordinate(request.getDropOffLon());
 
-        // Analyze with full location awareness
         HistoricalAnalysis analysis = analyzeHistoricalData(
                 currentHour, pickupLat, pickupLon, dropoffLat, dropoffLon);
 
-        // Calculate comprehensive score including location factors
         double finalScore = calculateFinalScore(request, analysis);
 
-        // Generate recommendation with location insights
         String recommendation = getRecommendation(finalScore);
         String reason = buildReason(request, analysis);
         String pickupInsight = getPickupLocationInsight(analysis, pickupLat, pickupLon);
@@ -64,7 +60,6 @@ public class TripAnalysisService {
         List<HistoricalTripDataLoader.TripRecord> allHourTrips = dataLoader.getTripsForHour(currentHour);
 
         if (!allHourTrips.isEmpty()) {
-            // Overall hour statistics
             analysis.avgEarningsPerMinute = allHourTrips.stream()
                     .mapToDouble(t -> t.netEarnings / t.durationMins)
                     .average()
@@ -75,7 +70,6 @@ public class TripAnalysisService {
                     .average()
                     .orElse(1.0);
 
-            // PICKUP LOCATION ANALYSIS
             if (pickupLat != null && pickupLon != null) {
                 List<HistoricalTripDataLoader.TripRecord> nearbyPickupTrips = allHourTrips.stream()
                         .filter(t -> calculateDistance(pickupLat, pickupLon, t.pickupLat, t.pickupLon) <= NEARBY_RADIUS_KM)
@@ -115,9 +109,7 @@ public class TripAnalysisService {
                 }
             }
 
-            // DROPOFF LOCATION ANALYSIS
             if (dropoffLat != null && dropoffLon != null) {
-                // Find trips that dropped off near this location
                 List<HistoricalTripDataLoader.TripRecord> nearbyDropoffTrips = allHourTrips.stream()
                         .filter(t -> calculateDistance(dropoffLat, dropoffLon, t.dropLat, t.dropLon) <= NEARBY_RADIUS_KM)
                         .toList();
@@ -125,7 +117,6 @@ public class TripAnalysisService {
                 if (!nearbyDropoffTrips.isEmpty()) {
                     analysis.nearbyDropoffTripsCount = nearbyDropoffTrips.size();
 
-                    // Check how many trips STARTED from this dropoff area (return trip potential)
                     List<HistoricalTripDataLoader.TripRecord> returnTripPotential = allHourTrips.stream()
                             .filter(t -> calculateDistance(dropoffLat, dropoffLon, t.pickupLat, t.pickupLon) <= NEARBY_RADIUS_KM)
                             .toList();
@@ -143,12 +134,10 @@ public class TripAnalysisService {
                                 .average()
                                 .orElse(1.0);
 
-                        // Calculate return trip quality index
                         analysis.returnTripQualityIndex =
                                 analysis.returnTripAvgEarnings / Math.max(0.01, analysis.avgEarningsPerMinute);
                     }
 
-                    // Analyze dropoff area characteristics
                     analysis.dropoffAvgEarningsPerMinute = nearbyDropoffTrips.stream()
                             .mapToDouble(t -> t.netEarnings / t.durationMins)
                             .average()
@@ -157,7 +146,6 @@ public class TripAnalysisService {
                     analysis.dropoffLocationProfitabilityIndex =
                             analysis.dropoffAvgEarningsPerMinute / Math.max(0.01, analysis.avgEarningsPerMinute);
 
-                    // Check if dropoff area has high demand (good for immediate return trips)
                     double dropoffVariance = calculateVariance(
                             returnTripPotential.stream()
                                     .mapToDouble(t -> t.netEarnings / t.durationMins)
@@ -166,8 +154,7 @@ public class TripAnalysisService {
                     analysis.dropoffAreaConsistency = dropoffVariance < 0.5 ? 1.0 : (dropoffVariance < 1.0 ? 0.7 : 0.4);
                 }
             }
-
-            // Top performers (75th percentile)
+            
             List<Double> earningsPerMin = allHourTrips.stream()
                     .map(t -> t.netEarnings / t.durationMins)
                     .sorted()
@@ -186,7 +173,6 @@ public class TripAnalysisService {
                     .orElse(0.0);
         }
 
-        // Surge forecasting
         analysis.nextHourSurge = dataLoader.getAverageSurgeForHour((currentHour + 1) % 24);
         analysis.twoHoursLaterSurge = dataLoader.getAverageSurgeForHour((currentHour + 2) % 24);
 
@@ -197,7 +183,6 @@ public class TripAnalysisService {
         double score = 0.0;
         double requestEarningsPerMin = request.getTotalEarnings() / request.getEstimatedDuration();
 
-        // 1. Earnings efficiency (20% weight)
         if (analysis.avgEarningsPerMinute > 0) {
             double efficiencyRatio = requestEarningsPerMin / analysis.avgEarningsPerMinute;
             if (efficiencyRatio >= 1.5) {
@@ -213,7 +198,6 @@ public class TripAnalysisService {
             score += requestEarningsPerMin > 0.5 ? 1.0 : 0.4;
         }
 
-        // 2. Pickup location analysis (18% weight)
         if (analysis.nearbyPickupAvgEarningsPerMinute > 0) {
             double locationRatio = requestEarningsPerMin / analysis.nearbyPickupAvgEarningsPerMinute;
             if (locationRatio >= 1.3) {
@@ -235,40 +219,34 @@ public class TripAnalysisService {
             score += 0.7;
         }
 
-        // 3. Dropoff location & return trip potential (17% weight) - NEW
         if (analysis.returnTripCount > 0) {
-            // Strong return trip potential
             if (analysis.returnTripQualityIndex > 1.2) {
-                score += 1.7; // Excellent return trip area
+                score += 1.7;
             } else if (analysis.returnTripQualityIndex > 1.0) {
-                score += 1.3; // Good return trip area
+                score += 1.3;
             } else if (analysis.returnTripQualityIndex > 0.8) {
-                score += 0.9; // Average return trip area
+                score += 0.9;
             } else {
-                score += 0.5; // Below-average return trip area
+                score += 0.5;
             }
 
-            // Bonus for high demand at dropoff
             if (analysis.returnTripCount > 20) {
-                score += 0.5; // High trip volume from this area
+                score += 0.5;
             } else if (analysis.returnTripCount > 10) {
                 score += 0.3;
             }
 
-            // Bonus for consistency
             score += analysis.dropoffAreaConsistency * 0.3;
         } else if (analysis.nearbyDropoffTripsCount > 0) {
-            // Has dropoff data but no return trip data
             if (analysis.dropoffLocationProfitabilityIndex > 1.1) {
                 score += 0.8;
             } else {
                 score += 0.5;
             }
         } else {
-            score += 0.6; // Neutral if no dropoff data
+            score += 0.6;
         }
 
-        // 4. Surge comparison (20% weight)
         double currentSurge = request.getSurgeMultiplier() != null ? request.getSurgeMultiplier() : 1.0;
         if (currentSurge >= 2.5) {
             score += 2.0;
@@ -284,7 +262,6 @@ public class TripAnalysisService {
             score += 0.5;
         }
 
-        // 5. Distance efficiency (15% weight)
         double earningsPerMile = request.getTotalEarnings() / request.getDistance();
         if (earningsPerMile > 3.5) {
             score += 1.5;
@@ -298,7 +275,6 @@ public class TripAnalysisService {
             score += 0.2;
         }
 
-        // 6. Time investment (10% weight)
         if (request.getEstimatedDuration() <= 10) {
             score += 1.0;
         } else if (request.getEstimatedDuration() <= 20) {
@@ -336,7 +312,6 @@ public class TripAnalysisService {
         double requestEarningsPerMin = request.getTotalEarnings() / request.getEstimatedDuration();
         double currentSurge = request.getSurgeMultiplier() != null ? request.getSurgeMultiplier() : 1.0;
 
-        // Pickup location insights
         if (analysis.nearbyPickupAvgEarningsPerMinute > 0) {
             double locationRatio = requestEarningsPerMin / analysis.nearbyPickupAvgEarningsPerMinute;
             if (locationRatio > 1.2) {
@@ -346,7 +321,6 @@ public class TripAnalysisService {
             }
         }
 
-        // Return trip potential
         if (analysis.returnTripQualityIndex > 1.2) {
             reasons.add("Excellent return trip potential");
         } else if (analysis.returnTripQualityIndex > 0.8 && analysis.returnTripCount > 10) {
@@ -355,7 +329,6 @@ public class TripAnalysisService {
             reasons.add("Low return trip demand");
         }
 
-        // Overall comparison
         if (analysis.avgEarningsPerMinute > 0) {
             double ratio = requestEarningsPerMin / analysis.avgEarningsPerMinute;
             if (ratio > 1.3) {
@@ -365,14 +338,12 @@ public class TripAnalysisService {
             }
         }
 
-        // Surge
         if (currentSurge >= 1.5) {
             reasons.add(String.format("Strong surge (%.1fx)", currentSurge));
         } else if (currentSurge > 1.0) {
             reasons.add(String.format("Moderate surge (%.1fx)", currentSurge));
         }
 
-        // Distance efficiency
         double earningsPerMile = request.getTotalEarnings() / request.getDistance();
         if (earningsPerMile > 2.5) {
             reasons.add(String.format("Great $/mi ($%.2f)", earningsPerMile));
@@ -380,7 +351,6 @@ public class TripAnalysisService {
             reasons.add(String.format("Low $/mi ($%.2f)", earningsPerMile));
         }
 
-        // Time
         if (request.getEstimatedDuration() > 45) {
             reasons.add("Long trip limits flexibility");
         } else if (request.getEstimatedDuration() <= 15) {
@@ -523,7 +493,6 @@ public class TripAnalysisService {
         double nextHourSurge = 1.0;
         double twoHoursLaterSurge = 1.0;
 
-        // Pickup location metrics
         int nearbyPickupTripsCount = 0;
         double nearbyPickupAvgEarningsPerMinute = 0.0;
         double nearbyPickupAvgSurge = 1.0;
@@ -532,13 +501,11 @@ public class TripAnalysisService {
         boolean pickupHasHotspotDestinations = false;
         double pickupLocationConsistency = 0.5;
 
-        // Dropoff location metrics
         int nearbyDropoffTripsCount = 0;
         double dropoffAvgEarningsPerMinute = 0.0;
         double dropoffLocationProfitabilityIndex = 1.0;
         double dropoffAreaConsistency = 0.5;
 
-        // Return trip potential
         int returnTripCount = 0;
         double returnTripAvgEarnings = 0.0;
         double returnTripAvgSurge = 1.0;

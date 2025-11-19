@@ -1,15 +1,17 @@
 # Uber Co-Pilot - AI-Powered Earner Assistant 🚗💰
 
-A complete, production-ready Flutter application for the Uber Earner Co-Pilot hackathon challenge. This app features an AI-powered assistant named "Atlas" that helps drivers maximize earnings, maintain wellness, and achieve their goals.
+A complete, production-ready Flutter application for the Uber Earner Co-Pilot hackathon challenge. This app features an assistant named "Ube" that helps drivers maximize earnings, maintain wellness, and achieve their goals.
 
 ![Flutter](https://img.shields.io/badge/Flutter-3.0+-blue)
 ![Dart](https://img.shields.io/badge/Dart-3.0+-blue)
 ![Platforms](https://img.shields.io/badge/Platforms-iOS%20%7C%20Android%20%7C%20Web-green)
 
+Link to demo: https://www.youtube.com/watch?v=-WIHpD0Npig
+
 ## 🌟 Features
 
 ### Core Functionality
-- **🤖 Atlas AI Co-Pilot**: Intelligent assistant providing real-time insights and recommendations
+- **🤖 Ube Co-Pilot**: Intelligent assistant providing real-time insights and recommendations
 - **📍 Smart Map Interface**: Visual demand zones with surge indicators
 - **💵 Earnings Tracking**: Real-time earnings counter with detailed breakdowns
 - **📊 Comprehensive Statistics**: Daily, weekly, and monthly performance analytics
@@ -36,13 +38,7 @@ A complete, production-ready Flutter application for the Uber Earner Co-Pilot ha
 - Live map with demand zones
 - Online/Offline toggle
 - Real-time earnings display
-- Trip request cards with Atlas analysis
-
-### Atlas AI Assistant
-- Animated floating orb
-- Draggable and interactive
-- Multiple personality states
-- Chat interface for queries
+- Trip request cards with Maskot analysis
 
 ### Statistics
 - Earnings charts and breakdowns
@@ -81,7 +77,12 @@ cd uber-copilot
 flutter pub get
 ```
 
-### 3. Run the App
+### 3. Generate platform folders
+```bash
+flutter create .
+```
+
+### 4. Run the App
 
 #### For Web
 ```bash
@@ -176,14 +177,14 @@ The app includes a comprehensive demo mode with:
 - Online/Offline toggle
 - Real-time status bar
 - Trip request cards with countdown timer
-- Atlas AI analysis for each request
+- Ube analysis for each request
 
-### 3. Atlas AI Assistant
-- Floating, draggable orb
+### 3. Ube Assistant
+- Cute parrot copilot, who needs coffee
 - Multiple animation states
-- Interactive chat interface
-- Quick action buttons
+- Can be integrated into Uber Driver app
 - Context-aware suggestions
+- Send safety and break reminder
 
 ### 4. Statistics
 - Earnings breakdown (pie chart)
@@ -195,23 +196,14 @@ The app includes a comprehensive demo mode with:
 ### 5. Settings
 - Theme selection (Light/Dark/System)
 - Notification preferences
-- Atlas personality modes
+- Ube personality modes
 - Break reminder configuration
 - Earnings goal adjustment
-
-## 📊 Metrics & Impact
-
-The app demonstrates measurable improvements:
-- **35%** reduction in idle time
-- **22%** increase in average earnings
-- **40%** reduction in safety incidents
-- **4.8/5** driver satisfaction score
-- **60%** improvement in break adherence
 
 ## 🏆 Hackathon Highlights
 
 ### Innovation
-- AI-powered decision making
+- Assistant-powered decision making
 - Predictive demand modeling
 - Wellness-focused features
 - Gamification elements
@@ -285,5 +277,3 @@ For questions or issues:
 ---
 
 **Built with ❤️ for Uber Earners**
-
-*Making every mile count with AI-powered intelligence*

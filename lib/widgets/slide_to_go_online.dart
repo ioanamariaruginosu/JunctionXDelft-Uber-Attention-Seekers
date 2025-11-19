@@ -133,7 +133,6 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
         children: [
           Stack(
             children: [
-              // Background track
               Container(
                 height: sliderHeight,
                 decoration: BoxDecoration(
@@ -159,8 +158,6 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
                   ),
                 ),
               ),
-
-              // Animated fill based on drag
               AnimatedContainer(
                 duration: _isDragging
                     ? Duration.zero
@@ -173,7 +170,6 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
                 ),
               ),
 
-              // Draggable thumb
               AnimatedPositioned(
                 duration: _isDragging
                     ? Duration.zero
@@ -193,14 +189,12 @@ class _SlideToGoOnlineState extends State<SlideToGoOnline> with SingleTickerProv
                   },
                   onHorizontalDragEnd: (_) {
                     if (_dragPosition > maxDrag * 0.8) {
-                      // Completed - go online
                       widget.onChanged(true);
                       setState(() {
                         _dragPosition = 0;
                         _isDragging = false;
                       });
                     } else {
-                      // Not completed - reset
                       setState(() {
                         _dragPosition = 0;
                         _isDragging = false;

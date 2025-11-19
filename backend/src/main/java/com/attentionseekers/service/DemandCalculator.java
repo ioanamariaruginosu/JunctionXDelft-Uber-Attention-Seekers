@@ -5,37 +5,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Utility that computes demand scores and categorical levels per zone.
- *
- * This class intentionally does not read CSVs or perform I/O. It receives
- * normalized signals (0..1 where applicable) as maps keyed by zone id
- * (for example 'A','B','C' or hex->zone mapped keys) and returns a map of
- * ZoneDemand results. Keeping it pure makes it easy to unit test and wire
- * into any DataLoader or controller in later steps.
- */
 public class DemandCalculator {
 
     public enum UserType {
         RIDER, FOOD
     }
 
-    /**
-     * Compute per-zone demand using the provided signals.
-     *
-     * All maps may be null or missing keys; missing numeric values are treated as 0.
-     * Weather factors should be around 1.0 (no effect). Cancellation rates should be 0..1.
-     *
-     * @param rides normalized rides activity (0..1)
-     * @param eats normalized eats activity (0..1)
-     * @param surge normalized surge signal (0..1)
-     * @param heat normalized heatmap/epH signal (0..1)
-     * @param incentives normalized incentive score (0..1)
-     * @param weatherFactor multiplier around 1.0 (e.g. 1.05 for rain boosting eats)
-     * @param cancellation cancellation rates (0..1) that penalize rides
-     * @param userType rider or food (to filter demand focus)
-     * @return map zone -> ZoneDemand
-     */
     public static Map<String, ZoneDemand> calculateDemand(
             Map<String, Double> rides,
             Map<String, Double> eats,
@@ -48,7 +23,6 @@ public class DemandCalculator {
     ) {
         Map<String, ZoneDemand> out = new HashMap<>();
 
-        // collect all zone keys
         Set<String> zones = new HashSet<>();
         if (rides != null) zones.addAll(rides.keySet());
         if (eats != null) zones.addAll(eats.keySet());
@@ -67,8 +41,6 @@ public class DemandCalculator {
             double w = safeGet(weatherFactor, z, 1.0);
             double c = safeGet(cancellation, z, 0.0);
 
-            // scoring weights (tweakable)
-            // Increase primary weights so a normalized activity of 1.0 maps to a "high" score.
             double ridesScore = clamp(0.9 * r + 0.05 * s + 0.03 * h + 0.02 * (w - 1.0) - 0.05 * c + 0.0 * i);
             double eatsScore  = clamp(0.9 * e + 0.05 * s + 0.03 * h + 0.02 * (w - 1.0) + 0.0 * i);
 
@@ -116,9 +88,6 @@ public class DemandCalculator {
         return "high";
     }
 
-    /**
-     * Simple DTO to hold demand results for a zone.
-     */
     public static class ZoneDemand {
         private final double ridesScore;
         private final String ridesLevel;

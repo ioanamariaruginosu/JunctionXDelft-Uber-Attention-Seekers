@@ -33,7 +33,6 @@ public class DemandDataLoader {
         this.eatsSignals = loadSignals(resourceLoader, "classpath:data/eats_orders.csv");
     }
 
-    // Public helpers to load per-city normalized signals on-demand (quick-and-dirty for demo)
     public Map<String, Double> ridesFor(DemandBucket bucket, int cityId) {
         EnumMap<DemandBucket, Map<String, Integer>> counts = loadSignalsForCity(resourceLoader, "classpath:data/rides_trips.csv", cityId);
         ensureBuckets(counts);
@@ -64,7 +63,6 @@ public class DemandDataLoader {
         return this.resourceLoader;
     }
 
-    // Return distinct city ids present in the rides CSV (quick scan)
     public java.util.List<Integer> getAvailableCityIds() {
         java.util.Set<Integer> cities = new java.util.TreeSet<>();
         Resource resource = resourceLoader.getResource("classpath:data/rides_trips.csv");
@@ -81,16 +79,10 @@ public class DemandDataLoader {
                 } catch (Exception ignored) {}
             }
         } catch (IOException e) {
-            // ignore and return empty
         }
         return new java.util.ArrayList<>(cities);
     }
 
-    /**
-     * Return a normalized rides signal (0..1) for the given city & bucket.
-     * Normalization is done per-city across the three buckets so values don't overlap
-     * between different city ids (each city is scaled independently).
-     */
     public double ridesSignalForCity(DemandBucket bucket, int cityId) {
         EnumMap<DemandBucket, Map<String, Integer>> counts = loadSignalsForCity(resourceLoader, "classpath:data/rides_trips.csv", cityId);
         ensureBuckets(counts);
@@ -99,10 +91,6 @@ public class DemandDataLoader {
         return max == 0 ? 0.0 : round(((double) value) / max);
     }
 
-    /**
-     * Return a normalized eats signal (0..1) for the given city & bucket.
-     * Normalized per-city across buckets.
-     */
     public double eatsSignalForCity(DemandBucket bucket, int cityId) {
         EnumMap<DemandBucket, Map<String, Integer>> counts = loadSignalsForCity(resourceLoader, "classpath:data/eats_orders.csv", cityId);
         ensureBuckets(counts);
@@ -117,7 +105,6 @@ public class DemandDataLoader {
         return map.values().stream().mapToInt(Integer::intValue).sum();
     }
 
-    // Count events for a given city at a specific hour and weekday (1=Monday..7=Sunday)
     private int countEventsForCityAt(ResourceLoader loader, String location, int wantedCityId, int hour, int dayOfWeek) {
         Resource resource = loader.getResource(location);
         int count = 0;
@@ -143,12 +130,10 @@ public class DemandDataLoader {
                 } catch (Exception ignored) {}
             }
         } catch (IOException e) {
-            // ignore
         }
         return count;
     }
 
-    // For a given city and weekday, return the maximum events observed across all hours (0-23)
     private int maxEventsForCityWeekday(ResourceLoader loader, String location, int wantedCityId, int dayOfWeek) {
         int max = 0;
         for (int h = 0; h < 24; h++) {
@@ -192,7 +177,6 @@ public class DemandDataLoader {
                         continue;
                     }
                     try {
-                        // determine column indices robustly using header names
                         int cityIdIdx = findHeaderIndex(header, "city_id", 3);
                         int startTimeIdx = findHeaderIndex(header, "start_time", 7);
                         int pickupHexIdx = findHeaderIndex(header, "pickup_hex_id9", -1);
@@ -202,7 +186,6 @@ public class DemandDataLoader {
                         DemandBucket bucket = DemandBucket.from(startTime.toLocalTime());
 
                         String zone = null;
-                        // Prefer pickup_hex_id9 when available; otherwise fall back to cityId
                         if (pickupHexIdx >= 0) {
                             String hex = safeGet(fields, pickupHexIdx);
                             zone = toZone(hex);
@@ -219,7 +202,6 @@ public class DemandDataLoader {
                         Map<String, Integer> zoneCounts = counts.computeIfAbsent(bucket, b -> new HashMap<>());
                         zoneCounts.merge(zone, 1, Integer::sum);
                     } catch (Exception ignored) {
-                        // skip malformed rows
                     }
             }
         } catch (IOException e) {
@@ -328,18 +310,14 @@ public class DemandDataLoader {
         return ZONES.get(index);
     }
 
-    // new: map pickup_hex_id9 to zone deterministically
-    // simple rule: look at last hex digit/char and map by its numeric value
     private String toZone(String hex) {
         if (hex == null || hex.isBlank()) return null;
-        // strip possible quotes/spaces
         String h = hex.trim();
         char last = h.charAt(h.length() - 1);
         int bucket = 0;
         if (Character.isDigit(last)) {
             bucket = Character.getNumericValue(last) % ZONES.size();
         } else if ((last >= 'a' && last <= 'f') || (last >= 'A' && last <= 'F')) {
-            // map hex letter to 10..15
             int v = Integer.parseInt(String.valueOf(last), 16);
             bucket = v % ZONES.size();
         } else {
@@ -348,7 +326,6 @@ public class DemandDataLoader {
         return ZONES.get(bucket);
     }
 
-    // Public accessor used by aggregator
     public String zoneForHex(String hex) {
         return toZone(hex);
     }

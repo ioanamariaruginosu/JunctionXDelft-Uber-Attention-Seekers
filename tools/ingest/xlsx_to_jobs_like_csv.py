@@ -1,9 +1,7 @@
-#!/usr/bin/env python3
 import argparse
 import sys
 import pandas as pd
 
-# Map marketplace/product values to canonical user types
 USER_TYPE_NORMALIZE = {
     "ridesharing": "rides",
     "ride": "rides",
@@ -49,38 +47,15 @@ def load_jobs_like_sheet(xls, default_city_id):
     if df.empty:
         return pd.DataFrame()
 
-    # Columns seen in your sample:
-    # - job_uuid
-    # - marketplace
-    # - datestr
-    # - acceptor_uuid
-    # - requester_uuid
-    # - begin_checkpoint.actual_location_hexagon_id9
-    # - begin_checkpoint.actual_location_latitude
-    # - begin_checkpoint.actual_location_longitude
-    # - begin_checkpoint.city_id
-    # - begin_checkpoint.ata_utc
-    # - end_checkpoint.actual_location_hexagon_id9
-    # - end_checkpoint.city_id
-    # - end_checkpoint.ata_utc
-    # - global_product_name
-    # - product_type_name
-    # - fulfillment_job_status
-
     cols = {c.lower(): c for c in df.columns}
     def c(name): return cols.get(name.lower())
-
-    # zone: prefer begin hex, else end hex
     zone = prefer(df.get(c("begin_checkpoint.actual_location_hexagon_id9")),
                   df.get(c("end_checkpoint.actual_location_hexagon_id9")))
-
-    # ts: prefer begin ata_utc, else end ata_utc, else datestr
     ts_raw = prefer(df.get(c("begin_checkpoint.ata_utc")),
                     df.get(c("end_checkpoint.ata_utc")),
                     df.get(c("datestr")))
     ts = parse_utc(ts_raw)
 
-    # city_id: prefer begin city, else end city, else default
     city_series = prefer(df.get(c("begin_checkpoint.city_id")),
                          df.get(c("end_checkpoint.city_id")))
     if city_series is None:
@@ -88,7 +63,6 @@ def load_jobs_like_sheet(xls, default_city_id):
     else:
         city = city_series.fillna(default_city_id)
 
-    # user_type: prefer marketplace, else product_type_name, else global_product_name
     user_raw = prefer(df.get(c("marketplace")),
                       df.get(c("product_type_name")),
                       df.get(c("global_product_name")))
@@ -99,11 +73,10 @@ def load_jobs_like_sheet(xls, default_city_id):
         "zone": zone.astype(str) if zone is not None else pd.Series([None]*len(df)),
         "ts": ts,
         "user_type": user.fillna("unknown"),
-        "jobs_like": 1.0,                # 1 event per row; will be aggregated later
+        "jobs_like": 1.0,                
         "source_sheet": "jobs_like",
     })
 
-    # Drop rows without essential fields
     out = out.dropna(subset=["city_id", "zone", "ts", "user_type"])
     out["city_id"] = out["city_id"].astype(int)
     return out
@@ -119,11 +92,9 @@ def load_rides_trips(xls):
     cols = {c.lower(): c for c in df.columns}
     def c(name): return cols.get(name.lower())
 
-    # zone: prefer pickup_hex_id9, else drop_hex_id9
     zone = prefer(df.get(c("pickup_hex_id9")),
                   df.get(c("drop_hex_id9")))
 
-    # ts: start_time
     ts = parse_utc(df.get(c("start_time")))
 
     city = df.get(c("city_id"))
@@ -198,7 +169,6 @@ def main():
 
     df = pd.concat(parts, ignore_index=True)
 
-    # Optional bucketing (recommended for smaller, smoother dataset)
     if args.bucket_minutes and args.bucket_minutes > 0:
         df["ts"] = pd.to_datetime(df["ts"], utc=True)
         df["ts"] = df["ts"].dt.floor(f"{args.bucket_minutes}min")
@@ -209,7 +179,6 @@ def main():
     else:
         out = df
 
-    # Final formatting
     out = out[["city_id", "zone", "ts", "user_type", "jobs_like", "source_sheet"]].copy()
     out["ts"] = pd.to_datetime(out["ts"], utc=True).dt.strftime("%Y-%m-%dT%H:%M:%SZ")
     out.to_csv(args.out, index=False)

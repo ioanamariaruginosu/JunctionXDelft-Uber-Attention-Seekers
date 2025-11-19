@@ -41,14 +41,12 @@ public class HistoricalTripDataLoader {
         return allTrips;
     }
 
-    // Get all trips for a specific hour across all cities
     public List<TripRecord> getTripsForHour(int hour) {
         return allTrips.stream()
                 .filter(trip -> trip.startTime.getHour() == hour)
                 .toList();
     }
 
-    // Get average surge for a specific hour across all cities
     public double getAverageSurgeForHour(int hour) {
         return surgeByHour.entrySet().stream()
                 .filter(entry -> entry.getKey().hour == hour)
@@ -79,7 +77,6 @@ public class HistoricalTripDataLoader {
                         trips.add(trip);
                     }
                 } catch (Exception e) {
-                    // Skip malformed rows
                 }
             }
         } catch (IOException e) {
@@ -103,11 +100,9 @@ public class HistoricalTripDataLoader {
             trip.vehicleType = fields[5];
             trip.isEv = Boolean.parseBoolean(fields[6]);
 
-            // Parse dates
             trip.startTime = LocalDateTime.parse(fields[7], DATE_TIME);
             trip.endTime = LocalDateTime.parse(fields[8], DATE_TIME);
 
-            // Location data
             trip.pickupLat = parseDouble(fields[9]);
             trip.pickupLon = parseDouble(fields[10]);
             trip.pickupHexId = fields[11];
@@ -115,7 +110,6 @@ public class HistoricalTripDataLoader {
             trip.dropLon = parseDouble(fields[13]);
             trip.dropHexId = fields[14];
 
-            // Trip metrics
             trip.distanceKm = parseDouble(fields[15]);
             trip.durationMins = Integer.parseInt(fields[16]);
             trip.surgeMultiplier = parseDouble(fields[17]);
@@ -157,7 +151,6 @@ public class HistoricalTripDataLoader {
                         surgeMap.put(new CityHourKey(cityId, hour), surge);
                     }
                 } catch (Exception e) {
-                    // Skip malformed rows
                 }
             }
         } catch (IOException e) {
@@ -188,8 +181,7 @@ public class HistoricalTripDataLoader {
             return 0.0;
         }
     }
-
-    // Data classes
+    
     public static class TripRecord {
         public String rideId;
         public String driverId;

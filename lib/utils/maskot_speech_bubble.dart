@@ -181,7 +181,6 @@ class _MaskotSpeechBubbleState extends State<MaskotSpeechBubble>
   Widget _buildSpeechBubble(ThemeData theme, String recommendation) {
     final lines = recommendation.split('\n');
 
-    // Determine bubble color based on recommendation
     Color bubbleColor;
     Color borderColor;
 
@@ -229,7 +228,6 @@ class _MaskotSpeechBubbleState extends State<MaskotSpeechBubble>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Maskot header
               Row(
                 children: [
                   _buildMaskotAvatar(borderColor: borderColor),
@@ -276,7 +274,6 @@ class _MaskotSpeechBubbleState extends State<MaskotSpeechBubble>
               ),
               const SizedBox(height: 12),
 
-              // Full recommendation text formatted as Maskot speaking
               Text(
                 _formatAsMaskotSpeech(recommendation),
                 style: TextStyle(
@@ -293,7 +290,6 @@ class _MaskotSpeechBubbleState extends State<MaskotSpeechBubble>
   }
 
   Widget _buildMaskotAvatar({bool isError = false, Color? borderColor}) {
-    // Determine which mascot image to show based on recommendation
     String mascotImage;
     if (isError) {
       mascotImage = 'assets/images/Mascot_tired.png';
@@ -328,10 +324,8 @@ class _MaskotSpeechBubbleState extends State<MaskotSpeechBubble>
   }
 
   String _formatAsMaskotSpeech(String recommendation) {
-    // Convert the backend response into Maskot speaking naturally
     String formatted = recommendation;
 
-    // Replace technical markers with conversational intro
     if (formatted.contains('ACCEPT NOW')) {
       formatted = formatted.replaceFirst(
           RegExp(r'[🔥✅⚠️❌🤔]*\s*ACCEPT NOW - '),
@@ -359,7 +353,6 @@ class _MaskotSpeechBubbleState extends State<MaskotSpeechBubble>
       );
     }
 
-    // Make metric labels more conversational
     formatted = formatted
         .replaceAll('Earnings:', 'You\'ll earn:')
         .replaceAll('Time:', 'It\'ll take:')

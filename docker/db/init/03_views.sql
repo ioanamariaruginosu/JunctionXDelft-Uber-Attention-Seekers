@@ -1,4 +1,3 @@
--- docker-entrypoint-initdb.d/03-views.sql
 CREATE OR REPLACE VIEW demand.jobs_like_levels AS
 SELECT
   city_id,

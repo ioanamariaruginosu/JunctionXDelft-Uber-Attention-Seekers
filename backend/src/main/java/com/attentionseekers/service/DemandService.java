@@ -27,7 +27,6 @@ public class DemandService {
         this(dataLoader, hexAggregator, ZoneId.systemDefault());
     }
 
-    // Compatibility constructor used by tests that pass (DemandDataLoader, ZoneId)
     public DemandService(DemandDataLoader dataLoader, ZoneId zoneId) {
         this(dataLoader, new HexAggregatorService(dataLoader.getResourceLoader()), zoneId);
     }
@@ -58,7 +57,6 @@ public class DemandService {
         return buildResponse(bucket, bucket.getLabel(), userType, -1);
     }
 
-    // convenience overloads used by controllers
     public DemandResponse getCurrentDemand(UserType userType) {
         return getCurrentDemand(userType, -1);
     }
@@ -81,12 +79,9 @@ public class DemandService {
 
     public DemandResponse getDemandAt(UserType userType, int cityId, ZonedDateTime dateTime) {
         DemandBucket bucket = DemandBucket.from(dateTime.toLocalTime());
-        // temporarily set the zone clock to the requested datetime when computing
-        // we'll compute representative LocalDateTime inside buildResponse using the provided ZonedDateTime
         return buildResponseForDatetime(bucket, "at", userType, cityId, dateTime);
     }
 
-    // internal helper to route to time-aware city computation
     private DemandResponse buildResponseForDatetime(DemandBucket bucket, String label, UserType userType, int cityId, ZonedDateTime dateTime) {
         if (cityId <= 0) return buildResponse(bucket, label, userType, cityId);
         java.time.LocalDateTime rep = java.time.LocalDateTime.of(dateTime.getYear(), dateTime.getMonth(), dateTime.getDayOfMonth(), dateTime.getHour(), 0);
@@ -125,10 +120,7 @@ public class DemandService {
     }
 
     private DemandResponse buildResponse(DemandBucket bucket, String label, UserType userType, int cityId) {
-        // If a specific cityId is provided, compute a single per-city demand
-        // value (no zones) so city-level signals do not overlap.
         if (cityId > 0) {
-            // compute a representative LocalDateTime for the bucket (use bucket midpoint hour)
             java.time.LocalTime rep = switch (bucket) {
                 case MORNING -> java.time.LocalTime.of(9, 0);
                 case EVENING -> java.time.LocalTime.of(18, 0);
@@ -138,7 +130,6 @@ public class DemandService {
             double ridesSignal = dataLoader.ridesSignalForCityAt(now, cityId);
             double eatsSignal = dataLoader.eatsSignalForCityAt(now, cityId);
 
-            // build maps with a single key = cityId string
             String key = String.valueOf(cityId);
             Map<String, Double> rides = new LinkedHashMap<>();
             Map<String, Double> eats = new LinkedHashMap<>();
@@ -172,7 +163,6 @@ public class DemandService {
             return new DemandResponse(Instant.now(), label, out);
         }
 
-        // Fallback: compute per-zone demand using existing hex/zone aggregation
         Map<String, Double> rides;
         Map<String, Double> eats;
         try {
